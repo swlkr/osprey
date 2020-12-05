@@ -1,6 +1,6 @@
-# Osprey Web Framework
+# Osprey
 
-Osprey is a [sinatra](http://sinatrarb.com) inspired web framework written in [janet](https://github.com/janet-lang/janet)
+Osprey is a [sinatra](http://sinatrarb.com) inspired framework for writing web applications in [janet](https://github.com/janet-lang/janet) quickly
 
 ```clojure
 ; # myapp.janet
