@@ -205,8 +205,15 @@
       (run-before-fns request)
 
       # run all after-fns after request
-      (let [response (f request)]
-        (run-after-fns response request)))))
+      (let [response (f request)
+            response (run-after-fns response request)]
+
+        (if (dictionary? response)
+          (update-in response [:headers] merge *headers*)
+
+          @{:status 200
+            :headers *headers*
+            :body (string response)})))))
 
 
 (defn add-header [name value]
@@ -234,20 +241,7 @@
                       (do ,;args))))
 
 
-(defn- use-response [handler]
-  (fn [request]
-    (when-let [response (handler request)]
-      (if (or (string? response)
-              (buffer? response))
-        @{:status 200
-          :headers *headers*
-          :body response}
-
-        (update-in response [:headers] merge *headers*)))))
-
-
-(def- app (-> (handler *routes*)
-              (use-response)))
+(def- app (handler *routes*))
 
 
 (defn server [&opt port host]
