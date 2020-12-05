@@ -97,6 +97,16 @@
                    (do ,;args)))))
 
 
+(defmacro put [uri & args]
+  ~(,add-route :put
+               ,uri
+               (fn [request]
+                 (let [{:params params
+                        :body body
+                        :headers headers} request]
+                   (do ,;args)))))
+
+
 (defmacro patch [uri & args]
   ~(,add-route :patch
                ,uri
