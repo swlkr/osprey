@@ -1,10 +1,10 @@
 (import halo)
 
 
-(defglobal :*headers* @{:content-type :text/plain})
-(defglobal :*routes* @[])
-(defglobal :*before-fns* @[])
-(defglobal :*after-fns* @[])
+(def- *headers* @{:content-type :text/plain})
+(def- *routes* @[])
+(def- *before-fns* @[])
+(def- *after-fns* @[])
 
 
 (defmacro set! [name value]
