@@ -1,26 +1,22 @@
-# Owl Web Framework
+# Osprey Web Framework
 
-Owl is a sinatra inspired web framework written in [janet](https://github.com/janet-lang/janet)
+Osprey is a [sinatra](http://sinatrarb.com) inspired web framework written in [janet](https://github.com/janet-lang/janet)
 
 ```clojure
-(use owl)
+; # myapp.janet
+(use osprey)
 
-(get "/" "🦉")
+(get "/" "osprey")
 
 (server 9001)
 ```
 
-## Getting Started
-
 First make sure [janet is installed](https://janet-lang.org/docs/index.html)
 
-After that make a new directory for your owl project, along with a `.janet` file:
+Then install osprey:
 
 ```sh
-mkdir my-owl-project \
-touch my-owl-project/main.janet \
-cd my-owl-project \
-echo '(use owl) (get "/" "🦉") (server 9001)' > main.janet
+jpm install https://github.com/swlkr/osprey
 ```
 
 ### Taking it for a spin
@@ -28,7 +24,7 @@ echo '(use owl) (get "/" "🦉") (server 9001)' > main.janet
 Now that we have some code going let's test it out:
 
 ```sh
-janet main.janet
+janet myapp.janet
 ```
 
 This should start an http server that's listening at http://localhost:9001.
@@ -37,8 +33,7 @@ Go ahead and test it with `curl`
 
 ```sh
 curl localhost:9001
+# => osprey
 ```
-
-This should show that same owl emoji in the terminal!
 
 That's it for now, happy hacking!
