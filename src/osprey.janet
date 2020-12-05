@@ -38,7 +38,7 @@
 (defn- wildcard-params [patt uri]
   (let [p (->> (string/split "*" patt)
                (interpose :param)
-               (filter |(not (empty? $)))
+               (filter any?)
                (slash-suffix)
                (freeze))
 
@@ -125,7 +125,7 @@
 (def- parts '(some (* "/" '(any (+ :a :d (set ":%$-_.+!*'(),"))))))
 
 
-(defn- route? [app-route request]
+(defn- route? [request app-route]
   (let [[route-method route-url] app-route
         {:uri uri :method method} request
         uri (first (string/split "?" uri))]
@@ -161,7 +161,7 @@
 
 
 (defn- find-route [routes request]
-  (find |(route? $ request) routes))
+  (find (partial route? request) routes))
 
 
 (defn- run-before-fns [request]
