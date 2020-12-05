@@ -7,7 +7,24 @@
 (def- *after-fns* @[])
 
 
-(defmacro set! [name value]
+(defmacro set!
+  `set! creates a varglobal in the current env
+  and also sets that value when a before or after
+  function is executed. Returns nil.
+
+  Example:
+
+  (use osprey)
+
+  (before "/"
+    (set! id 1))
+
+  (get "/" id)
+
+  (server 9001)
+
+  curl localhost:9001 => 1`
+  [name value]
   (varglobal (keyword name) nil)
   ~(set ,name ,value))
 
