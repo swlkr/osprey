@@ -42,8 +42,3 @@
           (map |(string/split "=" $) ?)
           (body-table ?)
           (map-keys keyword ?))))
-
-
-(defn redirect [uri]
-  @{:status 302
-    :headers @{"Location" uri}})
