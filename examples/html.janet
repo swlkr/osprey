@@ -1,7 +1,4 @@
 (use ../src/osprey)
-(import ../src/osprey/html)
-(import ../src/osprey/form)
-
 
 # put the todos somewhere
 # since there isn't a database
@@ -16,8 +13,9 @@
 # before "/todos/:id"
 # set the id to cut down on duplication
 (before "/todos/*"
-  (set! id (params :id))
-  (set! todo (get todos id)))
+  (when (params :id)
+    (set! id (scan-number (params :id))))
+  (set! todo (get-in todos [id])))
 
 
 # before everything try to parse application/x-www-form-urlencoded body
@@ -37,63 +35,70 @@
         [:body response]])))
 
 
-# just a nice hello world on root
-(get "/" [:h1 "hello world"])
-
-
-# helper for todos loop
-(defn todo/li [todo]
-  [:li
-   [:span (todo :name)]
-   [:span (if (todo :done) " is done!" "")]])
+(get "/"
+  [:div
+   [:h1 "welcome to osprey examples/html.janet"]
+   [:a {:href "/todos"} "view todos"]])
 
 
 # the seven CRUD methods
 (get "/todos"
-  [:ul
-   (map todo/li todos)])
+  [:div
+   [:a {:href "/"} "go home"]
+   [:span " "]
+   [:a {:href "/todos/new"} "new todo"]
+   [:ul
+    (foreach [todo todos]
+      [:li
+       [:span (todo :name)]
+       [:span (if (todo :done) " is done!" "")]
+       [:div
+        [:a {:href (href "/todos/:id/edit" todo)} "edit"]
+        [:span " "]
+        (form "/todos/:id/delete" todo
+          [:input {:type "submit" :value "delete"}])]])]])
 
 
-(get "/todos/:id"
+(get "/todos/:id/show"
   [:div
    [:span (todo :name)]
    [:span (if (todo :done) " is done!" "")]])
 
 
 (get "/todos/new"
-  [:form {:action "/todos" :method :post}
+  (form "/todos"
     [:input {:type "text" :name "name"}]
     [:input {:type "checkbox" :name "done"}]
-    [:input {:type "sunmit" :value "Save"}]])
+    [:input {:type "submit" :value "Save"}]))
 
 
 (post "/todos"
-  (array/push todos body)
-  (form/redirect "/todos"))
+  (array/push todos (put-in body [:id] (length todos)))
+  (redirect "/todos"))
 
 
 (get "/todos/:id/edit"
-  [:form {:action (string "/todos/:id" (params :id))
-          :method :patch}
-    [:input {:type "text" :name "name"}]
-    [:input {:type "checkbox" :name "done"}]
-    [:input {:type "submit" :value "Save"}]])
+  (printf "%q" todo)
+  (form "/todos/:id/edit" todo
+    [:input {:type "text" :name "name" :value (todo :name)}]
+    [:input (merge {:type "checkbox" :name "done"} (if (todo :done) {:checked ""} {}))]
+    [:input {:type "submit" :value "Save"}]))
 
 
 # this updates todos in the array
 # :id is assumed to be an integer
 # since todos is an array
-(patch "/todos/:id"
+(post "/todos/:id/edit"
   (update todos id merge body)
-  (form/redirect "/todos"))
+  (redirect "/todos"))
 
 
 # this deletes todos from the array
 # :id is assumed to be an integer
 # since todos is an array
-(delete "/todos/:id"
+(post "/todos/:id/delete"
   (array/remove todos id)
-  (form/redirect "/todos"))
+  (redirect "/todos"))
 
 # start the server on port 9001
 (server 9001)
