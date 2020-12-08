@@ -2,7 +2,7 @@
 
 # put the todos somewhere
 # since there isn't a database
-(def todos @[])
+(def todos @{})
 
 
 # add a response header to return text/html
@@ -10,17 +10,38 @@
 (add-header :content-type :text/html)
 
 
+# coerce false/true and numbers
+# since there is no database :(
+(defn coerce [body]
+  (when (dictionary? body)
+    (var output @{})
+
+    (eachp [k v] body
+      (put-in output [k]
+        (cond
+          (= "false" v) false
+          (= "true" v) true
+          (peg/match :d+ v) (scan-number v)
+          :else v)))
+
+    output))
+
+
+# before all requests try to parse application/x-www-form-urlencoded body
+# and use naive coerce fn
+(before "*"
+  (-> request
+      (update :body form/decode)
+      (update :body coerce)
+      (update :params coerce)))
+
+
 # before "/todos/:id"
-# set the id to cut down on duplication
+# set the id and todo var
 (before "/todos/*"
   (when (params :id)
-    (set! id (scan-number (params :id))))
+    (set! id (params :id)))
   (set! todo (get-in todos [id])))
-
-
-# before everything try to parse application/x-www-form-urlencoded body
-(before "*"
-  (update request :body form/decode))
 
 
 # after any request that isn't a redirect, slap a layout and html encode
@@ -31,74 +52,75 @@
       (html/doctype :html5)
       [:html {:lang "en"}
         [:head
-         [:title (string "html.janet example: " (request :uri))]]
+         [:title (request :uri)]]
         [:body response]])))
 
 
 (get "/"
   [:div
-   [:h1 "welcome to osprey examples/html.janet"]
+   [:h1 "welcome to osprey"]
    [:a {:href "/todos"} "view todos"]])
 
 
-# the seven CRUD methods
+# list of todos
 (get "/todos"
   [:div
    [:a {:href "/"} "go home"]
    [:span " "]
-   [:a {:href "/todos/new"} "new todo"]
+   [:a {:href "/todo"} "new todo"]
    [:ul
-    (foreach [todo todos]
+    (foreach [todo (->> todos values (sort-by |(get-in $ [:id])))]
       [:li
        [:span (todo :name)]
        [:span (if (todo :done) " is done!" "")]
        [:div
-        [:a {:href (href "/todos/:id/edit" todo)} "edit"]
+        [:a {:href (href "/todos/:id/edit" todo)}
+          "edit"]
         [:span " "]
         (form "/todos/:id/delete" todo
-          [:input {:type "submit" :value "delete"}])]])]])
+         [:input {:type "submit" :value "delete"}])]])]])
 
 
-(get "/todos/:id/show"
+(get "/todos/:id"
   [:div
    [:span (todo :name)]
    [:span (if (todo :done) " is done!" "")]])
 
 
-(get "/todos/new"
+(get "/todo"
   (form "/todos"
-    [:input {:type "text" :name "name"}]
-    [:input {:type "checkbox" :name "done"}]
-    [:input {:type "submit" :value "Save"}]))
+   [:input {:type "text" :name "name"}]
+   [:input {:type "checkbox" :name "done"}]
+   [:input {:type "submit" :value "Save"}]))
 
 
 (post "/todos"
-  (array/push todos (put-in body [:id] (length todos)))
+  (let [id (-> todos keys length)
+        todo (put-in body [:id] id)]
+    (put-in todos [id] todo))
+
   (redirect "/todos"))
 
 
 (get "/todos/:id/edit"
-  (printf "%q" todo)
-  (form "/todos/:id/edit" todo
-    [:input {:type "text" :name "name" :value (todo :name)}]
-    [:input (merge {:type "checkbox" :name "done"} (if (todo :done) {:checked ""} {}))]
-    [:input {:type "submit" :value "Save"}]))
+  (form "/todos/:id/update" todo
+   [:input {:type "text" :name "name" :value (todo :name)}]
+   [:input {:type "hidden" :name "done" :value false}]
+   [:input (merge {:type "checkbox" :name "done" :value true} (if (todo :done) {:checked ""} {}))]
+   [:input {:type "submit" :value "Save"}]))
 
 
-# this updates todos in the array
-# :id is assumed to be an integer
-# since todos is an array
-(post "/todos/:id/edit"
+# this updates todos in the dictionary
+(post "/todos/:id/update"
   (update todos id merge body)
   (redirect "/todos"))
 
 
-# this deletes todos from the array
-# :id is assumed to be an integer
-# since todos is an array
+# this deletes todos from the dictionary
 (post "/todos/:id/delete"
-  (array/remove todos id)
+  (put-in todos [id] nil)
   (redirect "/todos"))
+
 
 # start the server on port 9001
 (server 9001)
