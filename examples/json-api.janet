@@ -45,7 +45,6 @@
 # :id is assumed to be an integer
 # since todos is an array
 (delete "/todos/:id"
-  #(printf "%q" id)
   (array/remove todos id))
 
 # start the server on port 9001
