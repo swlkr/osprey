@@ -49,7 +49,7 @@
   (if (dictionary? response)
     response
     (html/encode
-      (html/doctype :html5)
+      (doctype :html5)
       [:html {:lang "en"}
         [:head
          [:title (request :uri)]]
@@ -90,7 +90,8 @@
 (get "/todo"
   (form "/todos"
    [:input {:type "text" :name "name"}]
-   [:input {:type "checkbox" :name "done"}]
+   [:input {:type "hidden" :name "done" :value false}]
+   [:input {:type "checkbox" :name "done" :value true}]
    [:input {:type "submit" :value "Save"}]))
 
 
