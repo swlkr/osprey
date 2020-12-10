@@ -18,11 +18,11 @@
 
     (eachp [k v] body
       (put-in output [k]
-        (cond
-          (= "false" v) false
-          (= "true" v) true
-          (peg/match :d+ v) (scan-number v)
-          :else v)))
+              (cond
+                (= "false" v) false
+                (= "true" v) true
+                (peg/match :d+ v) (scan-number v)
+                :else v)))
 
     output))
 
@@ -30,97 +30,97 @@
 # before all requests try to parse application/x-www-form-urlencoded body
 # and use naive coerce fn
 (before "*"
-  (-> request
-      (update :body form/decode)
-      (update :body coerce)
-      (update :params coerce)))
+        (-> request
+            (update :body form/decode)
+            (update :body coerce)
+            (update :params coerce)))
 
 
 # before "/todos/:id"
 # set the id and todo var
 (before "/todos/*"
-  (when (params :id)
-    (set! id (params :id)))
-  (set! todo (get-in todos [id])))
+        (when (params :id)
+          (set! id (params :id)))
+        (set! todo (todos id)))
 
 
 # after any request that isn't a redirect, slap a layout and html encode
 (after "*"
-  (if (dictionary? response)
-    response
-    (html/encode
-      (doctype :html5)
-      [:html {:lang "en"}
-        [:head
-         [:title (request :uri)]]
-        [:body response]])))
+       (if (dictionary? response)
+         response
+         (html/encode
+           (doctype :html5)
+           [:html {:lang "en"}
+            [:head
+             [:title (request :uri)]]
+            [:body response]])))
 
 
-(get "/"
-  [:div
-   [:h1 "welcome to osprey"]
-   [:a {:href "/todos"} "view todos"]])
+(GET "/"
+     [:div
+      [:h1 "welcome to osprey"]
+      [:a {:href "/todos"} "view todos"]])
 
 
 # list of todos
-(get "/todos"
-  [:div
-   [:a {:href "/"} "go home"]
-   [:span " "]
-   [:a {:href "/todo"} "new todo"]
-   [:ul
-    (foreach [todo (->> todos values (sort-by |(get-in $ [:id])))]
-      [:li
-       [:span (todo :name)]
-       [:span (if (todo :done) " is done!" "")]
-       [:div
-        [:a {:href (href "/todos/:id/edit" todo)}
-          "edit"]
-        [:span " "]
-        (form "/todos/:id/delete" todo
-         [:input {:type "submit" :value "delete"}])]])]])
+(GET "/todos"
+     [:div
+      [:a {:href "/"} "go home"]
+      [:span " "]
+      [:a {:href "/todo"} "new todo"]
+      [:ul
+       (foreach [todo (->> todos values (sort-by |($ :id)))]
+                [:li
+                 [:span (todo :name)]
+                 [:span (if (todo :done) " is done!" "")]
+                 [:div
+                  [:a {:href (href "/todos/:id/edit" todo)}
+                   "edit"]
+                  [:span " "]
+                  (form "/todos/:id/delete" todo
+                        [:input {:type "submit" :value "delete"}])]])]])
 
 
-(get "/todos/:id"
-  [:div
-   [:span (todo :name)]
-   [:span (if (todo :done) " is done!" "")]])
+(GET "/todos/:id"
+     [:div
+      [:span (todo :name)]
+      [:span (if (todo :done) " is done!" "")]])
 
 
-(get "/todo"
-  (form "/todos"
-   [:input {:type "text" :name "name"}]
-   [:input {:type "hidden" :name "done" :value false}]
-   [:input {:type "checkbox" :name "done" :value true}]
-   [:input {:type "submit" :value "Save"}]))
+(GET "/todo"
+     (form "/todos"
+           [:input {:type "text" :name "name"}]
+           [:input {:type "hidden" :name "done" :value false}]
+           [:input {:type "checkbox" :name "done" :value true}]
+           [:input {:type "submit" :value "Save"}]))
 
 
-(post "/todos"
-  (let [id (-> todos keys length)
-        todo (put-in body [:id] id)]
-    (put-in todos [id] todo))
+(POST "/todos"
+      (let [id (-> todos keys length)
+            todo (put-in body [:id] id)]
+        (put-in todos [id] todo))
 
-  (redirect "/todos"))
+      (redirect "/todos"))
 
 
-(get "/todos/:id/edit"
-  (form "/todos/:id/update" todo
-   [:input {:type "text" :name "name" :value (todo :name)}]
-   [:input {:type "hidden" :name "done" :value false}]
-   [:input (merge {:type "checkbox" :name "done" :value true} (if (todo :done) {:checked ""} {}))]
-   [:input {:type "submit" :value "Save"}]))
+(GET "/todos/:id/edit"
+     (form "/todos/:id/update" todo
+           [:input {:type "text" :name "name" :value (todo :name)}]
+           [:input {:type "hidden" :name "done" :value false}]
+           [:input (merge {:type "checkbox" :name "done" :value true} (if (todo :done) {:checked ""} {}))]
+           [:input {:type "submit" :value "Save"}]))
 
 
 # this updates todos in the dictionary
-(post "/todos/:id/update"
-  (update todos id merge body)
-  (redirect "/todos"))
+(POST "/todos/:id/update"
+      (update todos id merge body)
+      (redirect "/todos"))
 
 
 # this deletes todos from the dictionary
-(post "/todos/:id/delete"
-  (put-in todos [id] nil)
-  (redirect "/todos"))
+(POST "/todos/:id/delete"
+      (put-in todos [id] nil)
+      (redirect "/todos"))
 
 
 # start the server on port 9001

@@ -54,7 +54,7 @@
   (array/push *routes* [method uri f]))
 
 
-(defmacro get
+(defmacro GET
   [uri & *osprey-args*]
   (with-syms [$uri]
     ~(let [,$uri ,uri]
@@ -67,7 +67,7 @@
                        (do ,;*osprey-args*)))))))
 
 
-(defmacro post
+(defmacro POST
   [uri & *osprey-args*]
   (with-syms [$uri]
     ~(let [,$uri ,uri]
@@ -80,7 +80,7 @@
                        (do ,;*osprey-args*)))))))
 
 
-(defmacro put
+(defmacro PUT
   [uri & *osprey-args*]
   (with-syms [$uri]
     ~(let [,$uri ,uri]
@@ -93,7 +93,7 @@
                        (do ,;*osprey-args*)))))))
 
 
-(defmacro patch
+(defmacro PATCH
   [uri & *osprey-args*]
   (with-syms [$uri]
     ~(let [,$uri ,uri]
@@ -106,7 +106,7 @@
                        (do ,;*osprey-args*)))))))
 
 
-(defmacro delete
+(defmacro DELETE
   [uri & *osprey-args*]
   (with-syms [$uri]
     ~(let [,$uri ,uri]
