@@ -1,5 +1,5 @@
 (use ../src/osprey)
 
-(get "/" "osprey")
+(GET "/" "osprey")
 
 (server 9001)
