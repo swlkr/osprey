@@ -17,7 +17,7 @@
     (var output @{})
 
     (eachp [k v] body
-      (put-in output [k]
+      (put output k
         (cond
           (= "false" v) false
           (= "true" v) true
@@ -97,8 +97,8 @@
 
 (POST "/todos"
   (let [id (-> todos keys length)
-        todo (put-in body [:id] id)]
-    (put-in todos [id] todo))
+        todo (put body :id id)]
+    (put todos id todo))
 
   (redirect "/todos"))
 
@@ -119,7 +119,7 @@
 
 # this deletes todos from the dictionary
 (POST "/todos/:id/delete"
-  (put-in todos [id] nil)
+  (put todos id nil)
   (redirect "/todos"))
 
 
