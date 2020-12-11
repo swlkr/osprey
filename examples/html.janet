@@ -17,7 +17,7 @@
     (var output @{})
 
     (eachp [k v] body
-      (put-in output [k]
+      (put output k
         (cond
           (= "false" v) false
           (= "true" v) true
@@ -41,7 +41,7 @@
 (before "/todos/*"
   (when (params :id)
     (set! id (params :id)))
-  (set! todo (get-in todos [id])))
+  (set! todo (todos id)))
 
 
 # after any request that isn't a redirect, slap a layout and html encode
@@ -56,20 +56,20 @@
         [:body response]])))
 
 
-(get "/"
+(GET "/"
   [:div
    [:h1 "welcome to osprey"]
    [:a {:href "/todos"} "view todos"]])
 
 
 # list of todos
-(get "/todos"
+(GET "/todos"
   [:div
    [:a {:href "/"} "go home"]
    [:span " "]
    [:a {:href "/todo"} "new todo"]
    [:ul
-    (foreach [todo (->> todos values (sort-by |(get-in $ [:id])))]
+    (foreach [todo (->> todos values (sort-by |($ :id)))]
       [:li
        [:span (todo :name)]
        [:span (if (todo :done) " is done!" "")]
@@ -81,13 +81,13 @@
          [:input {:type "submit" :value "delete"}])]])]])
 
 
-(get "/todos/:id"
+(GET "/todos/:id"
   [:div
    [:span (todo :name)]
    [:span (if (todo :done) " is done!" "")]])
 
 
-(get "/todo"
+(GET "/todo"
   (form "/todos"
    [:input {:type "text" :name "name"}]
    [:input {:type "hidden" :name "done" :value false}]
@@ -95,15 +95,15 @@
    [:input {:type "submit" :value "Save"}]))
 
 
-(post "/todos"
+(POST "/todos"
   (let [id (-> todos keys length)
-        todo (put-in body [:id] id)]
-    (put-in todos [id] todo))
+        todo (put body :id id)]
+    (put todos id todo))
 
   (redirect "/todos"))
 
 
-(get "/todos/:id/edit"
+(GET "/todos/:id/edit"
   (form "/todos/:id/update" todo
    [:input {:type "text" :name "name" :value (todo :name)}]
    [:input {:type "hidden" :name "done" :value false}]
@@ -112,14 +112,14 @@
 
 
 # this updates todos in the dictionary
-(post "/todos/:id/update"
+(POST "/todos/:id/update"
   (update todos id merge body)
   (redirect "/todos"))
 
 
 # this deletes todos from the dictionary
-(post "/todos/:id/delete"
-  (put-in todos [id] nil)
+(POST "/todos/:id/delete"
+  (put todos id nil)
   (redirect "/todos"))
 
 
