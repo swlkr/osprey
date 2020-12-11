@@ -190,7 +190,7 @@
                f (last route)
                wildcard (wildcard-params uri (request :uri))
                params (or (route-params uri (request :uri)) @{})
-               request (merge request {:params params :wildcard wildcard})]
+               request (merge request {:params params :wildcard wildcard :route route :route-uri (get route 1)})]
 
       # run all before-fns before request
       (run-before-fns request)
