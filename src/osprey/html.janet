@@ -152,5 +152,3 @@
 
 (defn encode [& args]
   (string/join (map create args)))
-
-(def html/encode encode)
