@@ -1,5 +1,5 @@
 (use ../src/osprey)
 
-(get "/" "hello world")
+(GET "/" "hello world")
 
 (server 9001)

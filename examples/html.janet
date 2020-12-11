@@ -5,11 +5,6 @@
 (def todos @{})
 
 
-# add a response header to return text/html
-# to the client
-(add-header :content-type :text/html)
-
-
 # coerce false/true and numbers
 # since there is no database :(
 (defn coerce [body]
