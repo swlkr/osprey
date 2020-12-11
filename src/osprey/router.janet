@@ -232,7 +232,7 @@
                              (do ,;*osprey-args*)))))))
 
 
-(def- app (handler *routes*))
+(def app (handler *routes*))
 
 
 (defn server [&opt port host]
