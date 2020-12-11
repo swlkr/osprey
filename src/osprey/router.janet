@@ -1,7 +1,6 @@
 (import halo)
 (import ./helpers :prefix "")
 
-(def- *headers* @{:content-type :text/plain})
 (def- *routes* @[])
 (def- *before-fns* @[])
 (def- *after-fns* @[])
@@ -201,15 +200,8 @@
             response (run-after-fns response request)]
 
         (if (dictionary? response)
-          (update-in response [:headers] merge *headers*)
-
-          @{:status 200
-            :headers *headers*
-            :body (string response)})))))
-
-
-(defn add-header [name value]
-  (put-in *headers* [name] value))
+          response
+          (ok text/plain (string response)))))))
 
 
 (defn- add-before [uri args]
