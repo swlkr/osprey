@@ -53,8 +53,7 @@
 
 
 (GET "/"
-  [:div
-   [:h1 "welcome to osprey"]
+  [[:h1 "welcome to osprey"]
    [:a {:href "/todos"} "view todos"]])
 
 
