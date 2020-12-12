@@ -84,18 +84,31 @@
 
 (GET "/todo"
   (form "/todos"
-   [:input {:type "text" :name "name"}]
-   [:input {:type "hidden" :name "done" :value false}]
-   [:input {:type "checkbox" :name "done" :value true}]
+   [:div
+    [:label "name"]
+    [:div
+     [:input {:type "text" :name "name"}]
+     (when-let [err (get-in request [:errors :name])]
+       [:div err])]]
+
+   [:div
+    [:input {:type "hidden" :name "done" :value false}]
+    [:input {:type "checkbox" :name "done" :value true}]
+    [:label "Done"]]
+
    [:input {:type "submit" :value "Save"}]))
 
 
 (POST "/todos"
   (let [id (-> todos keys length)
         todo (put body :id id)]
-    (put todos id todo))
 
-  (redirect "/todos"))
+    (if (empty? (body :name))
+      (render "/todo" (merge request {:errors {:name "name is blank"}}))
+
+      (do
+        (put todos id todo)
+        (redirect "/todos")))))
 
 
 (GET "/todos/:id/edit"
