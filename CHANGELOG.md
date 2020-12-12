@@ -7,3 +7,5 @@ All notable changes to this project will be documented in this file.
 - Add `ok` function (helper for status 200)
 - Add `text/html`, `application/json`, `text/plain` content-type functions
 - Remove `add-header` function
+- Make `app` public
+- Add `render` function

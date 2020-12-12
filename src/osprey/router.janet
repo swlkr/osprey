@@ -49,75 +49,6 @@
           (table ;?))))
 
 
-(defn- add-route [method uri f]
-  (array/push *routes* [method uri f]))
-
-
-(defmacro GET
-  [uri & *osprey-args*]
-  (with-syms [$uri]
-    ~(let [,$uri ,uri]
-       (,add-route :get
-                   ,$uri
-                   (fn [request]
-                     (let [{:params params
-                            :body body
-                            :headers headers} request]
-                       (do ,;*osprey-args*)))))))
-
-
-(defmacro POST
-  [uri & *osprey-args*]
-  (with-syms [$uri]
-    ~(let [,$uri ,uri]
-       (,add-route :post
-                   ,$uri
-                   (fn [request]
-                     (let [{:params params
-                            :body body
-                            :headers headers} request]
-                       (do ,;*osprey-args*)))))))
-
-
-(defmacro PUT
-  [uri & *osprey-args*]
-  (with-syms [$uri]
-    ~(let [,$uri ,uri]
-       (,add-route :put
-                   ,$uri
-                   (fn [request]
-                     (let [{:params params
-                            :body body
-                            :headers headers} request]
-                       (do ,;*osprey-args*)))))))
-
-
-(defmacro PATCH
-  [uri & *osprey-args*]
-  (with-syms [$uri]
-    ~(let [,$uri ,uri]
-       (,add-route :patch
-                   ,$uri
-                   (fn [request]
-                     (let [{:params params
-                            :body body
-                            :headers headers} request]
-                       (do ,;*osprey-args*)))))))
-
-
-(defmacro DELETE
-  [uri & *osprey-args*]
-  (with-syms [$uri]
-    ~(let [,$uri ,uri]
-       (,add-route :delete
-                   ,$uri
-                   (fn [request]
-                     (let [{:params params
-                            :body body
-                            :headers headers} request]
-                       (do ,;*osprey-args*)))))))
-
-
 (defn- part? [[s1 s2]]
   (or (= s1 s2)
       (string/find ":" s1)))
@@ -204,6 +135,87 @@
           (ok text/plain (string response)))))))
 
 
+(def app (handler *routes*))
+
+
+(defn render [request url &opt req]
+  (app (merge (or req request) {:uri url :method "GET"})))
+
+
+(defn- add-route [method uri f]
+  (array/push *routes* [method uri f]))
+
+
+(defmacro GET
+  [uri & *osprey-args*]
+  (with-syms [$uri]
+    ~(let [,$uri ,uri]
+       (,add-route :get
+                   ,$uri
+                   (fn [request]
+                     (let [{:params params
+                            :body body
+                            :headers headers} request
+                           render (partial render request)]
+                       (do ,;*osprey-args*)))))))
+
+
+(defmacro POST
+  [uri & *osprey-args*]
+  (with-syms [$uri]
+    ~(let [,$uri ,uri]
+       (,add-route :post
+                   ,$uri
+                   (fn [request]
+                     (let [{:params params
+                            :body body
+                            :headers headers} request
+                           render (partial render request)]
+                       (do ,;*osprey-args*)))))))
+
+
+(defmacro PUT
+  [uri & *osprey-args*]
+  (with-syms [$uri]
+    ~(let [,$uri ,uri]
+       (,add-route :put
+                   ,$uri
+                   (fn [request]
+                     (let [{:params params
+                            :body body
+                            :headers headers} request
+                           render (partial render request)]
+                       (do ,;*osprey-args*)))))))
+
+
+(defmacro PATCH
+  [uri & *osprey-args*]
+  (with-syms [$uri]
+    ~(let [,$uri ,uri]
+       (,add-route :patch
+                   ,$uri
+                   (fn [request]
+                     (let [{:params params
+                            :body body
+                            :headers headers} request
+                           render (partial render request)]
+                       (do ,;*osprey-args*)))))))
+
+
+(defmacro DELETE
+  [uri & *osprey-args*]
+  (with-syms [$uri]
+    ~(let [,$uri ,uri]
+       (,add-route :delete
+                   ,$uri
+                   (fn [request]
+                     (let [{:params params
+                            :body body
+                            :headers headers} request
+                           render (partial render request)]
+                       (do ,;*osprey-args*)))))))
+
+
 (defn- add-before [uri args]
   (array/push *before-fns* [uri args]))
 
@@ -230,9 +242,6 @@
                                   :body body
                                   :params params} request]
                              (do ,;*osprey-args*)))))))
-
-
-(def app (handler *routes*))
 
 
 (defn server [&opt port host]
