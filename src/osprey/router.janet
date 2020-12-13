@@ -296,14 +296,3 @@
       ;body]))
 
 
-(defn add-logging []
-  (var start-seconds 0)
-  (var end-seconds 0)
-
-  (before "*"
-    (set start-seconds (os/clock)))
-
-  (after "*"
-    (set end-seconds (os/clock))
-    (printf "[%s] %s=%s %s=%s %s=%.1fms" (timestamp) "uri" (request :uri) "method" (request :method) "duration" (- end-seconds start-seconds))
-    response))
