@@ -44,12 +44,12 @@
   (if (dictionary? response)
     response
     (ok text/html
-      (html/encode
-        (doctype :html5)
-        [:html {:lang "en"}
-          [:head
-           [:title (request :uri)]]
-          [:body response]]))))
+        (html/encode
+          (doctype :html5)
+          [:html {:lang "en"}
+            [:head
+             [:title (request :uri)]]
+            [:body response]]))))
 
 
 (GET "/"
