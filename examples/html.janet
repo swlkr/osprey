@@ -52,6 +52,12 @@
             [:body response]]))))
 
 
+# checkbox helper
+(defn checkbox [attributes]
+  [[:input {:type "hidden" :name (attributes :name) :value false}]
+   [:input (merge attributes {:type "checkbox" :name (attributes :name) :value true})]])
+
+
 (GET "/"
   [[:h1 "welcome to osprey"]
    [:a {:href "/todos"} "view todos"]])
@@ -86,15 +92,13 @@
   (form "/todos"
    [:div
     [:label "name"]
-    [:div
-     [:input {:type "text" :name "name"}]
-     (when-let [err (get-in request [:errors :name])]
-       [:div err])]]
+    [:br]
+    [:input {:type "text" :name "name"}]
+    (when-let [err (get-in request [:errors :name])]
+      [:div err])]
 
-   [:div
-    [:input {:type "hidden" :name "done" :value false}]
-    [:input {:type "checkbox" :name "done" :value true}]
-    [:label "Done"]]
+   (checkbox {:name "done" :checked (todo :done)})
+   [:label "Done"]
 
    [:input {:type "submit" :value "Save"}]))
 
@@ -113,9 +117,14 @@
 
 (GET "/todos/:id/edit"
   (form "/todos/:id/update" todo
-   [:input {:type "text" :name "name" :value (todo :name)}]
-   [:input {:type "hidden" :name "done" :value false}]
-   [:input (merge {:type "checkbox" :name "done" :value true} (if (todo :done) {:checked ""} {}))]
+   [:div
+    [:label "Name"]
+    [:br]
+    [:input {:type "text" :name "name" :value (todo :name)}]]
+
+   (checkbox {:name "done" :checked (todo :done)})
+   [:label "Done"]
+
    [:input {:type "submit" :value "Save"}]))
 
 
