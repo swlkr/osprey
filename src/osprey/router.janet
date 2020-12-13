@@ -1,4 +1,5 @@
 (import halo)
+(import path)
 (import ./helpers :prefix "")
 
 (def- *routes* @[])
@@ -301,3 +302,11 @@
       ;body]))
 
 
+(defn enable [key &opt val]
+  (case key
+    :static-files
+    (after "*"
+      (if response
+        response
+        (let [public-folder (or val "public")]
+          {:file (path/join public-folder (request :uri))})))))

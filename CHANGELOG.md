@@ -9,3 +9,5 @@ All notable changes to this project will be documented in this file.
 - Remove `add-header` function
 - Make `app` public
 - Add `render` function
+- Add `enable` function
+- Add `(enable :static-files)`
