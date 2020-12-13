@@ -12,20 +12,21 @@
 
 
 (defn- wildcard-params [patt uri]
-  (let [p (->> (string/split "*" patt)
-               (interpose :param)
-               (filter any?)
-               (slash-suffix)
-               (freeze))
+  (when (and patt uri)
+    (let [p (->> (string/split "*" patt)
+                 (interpose :param)
+                 (filter any?)
+                 (slash-suffix)
+                 (freeze))
 
-        route-peg ~{:param (<- (any (+ :w (set "%$-_.+!*'(),"))))
-                    :slash-param (<- (any (+ :w (set "%$-_.+!*'(),/"))))
-                    :main (* ,;p)}]
+          route-peg ~{:param (<- (any (+ :w (set "%$-_.+!*'(),"))))
+                      :slash-param (<- (any (+ :w (set "%$-_.+!*'(),/"))))
+                      :main (* ,;p)}]
 
-    (if (= patt uri)
-      @[""]
-      (or (peg/match route-peg uri)
-          @[]))))
+      (if (= patt uri)
+        @[""]
+        (or (peg/match route-peg uri)
+            @[])))))
 
 
 (defn- route-param? [val]
@@ -39,14 +40,15 @@
 
 
 (defn- route-params [app-url uri]
-  (let [app-parts (string/split "/" app-url)
-        req-parts (string/split "/" uri)]
-    (as-> (interleave app-parts req-parts) ?
-          (partition 2 ?)
-          (filter (fn [[x]] (route-param? x)) ?)
-          (map (fn [[x y]] @[(keyword (drop 1 x)) (first (string/split "?" y))]) ?)
-          (mapcat identity ?)
-          (table ;?))))
+  (when (and app-url uri)
+    (let [app-parts (string/split "/" app-url)
+          req-parts (string/split "/" uri)]
+      (as-> (interleave app-parts req-parts) ?
+            (partition 2 ?)
+            (filter (fn [[x]] (route-param? x)) ?)
+            (map (fn [[x y]] @[(keyword (drop 1 x)) (first (string/split "?" y))]) ?)
+            (mapcat identity ?)
+            (table ;?)))))
 
 
 (defn- part? [[s1 s2]]
@@ -93,7 +95,8 @@
 
 
 (defn- find-route [routes request]
-  (find (partial route? request) routes))
+  (or (find (partial route? request) routes)
+      @[]))
 
 
 (defn- run-before-fns [request]
@@ -116,12 +119,14 @@
   "Creates a handler function from routes. Returns nil when handler/route doesn't exist."
   [routes]
   (fn [request]
-    (when-let [route (find-route routes request)
-               [method uri] route
-               f (last route)
-               wildcard (wildcard-params uri (request :uri))
-               params (or (route-params uri (request :uri)) @{})
-               request (merge request {:params params :wildcard wildcard :route route :route-uri (get route 1)})]
+    (let [route (find-route routes request)
+          [method uri] route
+          f (last route)
+          wildcard (wildcard-params uri (request :uri))
+          params (or (route-params uri (request :uri)) @{})
+          request (merge request {:params params
+                                  :wildcard wildcard
+                                  :route-uri (get route 1)})]
 
       # run all before-fns before request
       (run-before-fns request)
