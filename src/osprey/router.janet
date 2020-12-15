@@ -302,11 +302,15 @@
       ;body]))
 
 
+(defn- enable-static-files [public-folder]
+  (after "*"
+         (if response
+           response
+           (let [public-folder (or public-folder "public")]
+             {:file (path/join public-folder (request :uri))}))))
+
+
 (defn enable [key &opt val]
   (case key
     :static-files
-    (after "*"
-      (if response
-        response
-        (let [public-folder (or val "public")]
-          {:file (path/join public-folder (request :uri))})))))
+    (enable-static-files val)))
