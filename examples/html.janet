@@ -55,7 +55,10 @@
 # checkbox helper
 (defn checkbox [attributes]
   [[:input {:type "hidden" :name (attributes :name) :value false}]
-   [:input (merge attributes {:type "checkbox" :name (attributes :name) :value true})]])
+   (let [attrs {:type "checkbox" :name (attributes :name) :value true}]
+     (if (attributes :checked)
+       [:input (merge attributes attrs)]
+       [:input attrs]))])
 
 
 (GET "/"
@@ -97,7 +100,7 @@
     (when-let [err (get-in request [:errors :name])]
       [:div err])]
 
-   (checkbox {:name "done" :checked (todo :done)})
+   (checkbox {:name "done" :checked (get todo :done false)})
    [:label "Done"]
 
    [:input {:type "submit" :value "Save"}]))
