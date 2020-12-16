@@ -1,4 +1,4 @@
-(import halo)
+(import halo2)
 (import path)
 (import cipher)
 (import ./session)
@@ -271,7 +271,7 @@
   (default port 0)
   (default host "localhost")
 
-  (halo/server app port))
+  (halo2/server app port))
 
 
 (defn- route-url [string-route &opt params]
