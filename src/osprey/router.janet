@@ -119,29 +119,34 @@
   res)
 
 
+(defn halt [response]
+  (return :halt response))
+
+
 (defn- handler
   "Creates a handler function from routes. Returns nil when handler/route doesn't exist."
   [routes]
   (fn [request]
-    (let [route (find-route routes request)
-          [method uri] route
-          f (last route)
-          wildcard (wildcard-params uri (request :uri))
-          params (or (route-params uri (request :uri)) @{})
-          request (merge request {:params params
-                                  :wildcard wildcard
-                                  :route-uri (get route 1)})]
+    (prompt :halt
+      (let [route (find-route routes request)
+            [method uri] route
+            f (last route)
+            wildcard (wildcard-params uri (request :uri))
+            params (or (route-params uri (request :uri)) @{})
+            request (merge request {:params params
+                                    :wildcard wildcard
+                                    :route-uri (get route 1)})]
 
-      # run all before-fns before request
-      (run-before-fns request)
+        # run all before-fns before request
+        (run-before-fns request)
 
-      # run all after-fns after request
-      (let [response (f request)
-            response (run-after-fns response request)]
+        # run all after-fns after request
+        (let [response (f request)
+              response (run-after-fns response request)]
 
-        (if (dictionary? response)
-          response
-          (ok text/plain (string response)))))))
+          (if (dictionary? response)
+            response
+            (ok text/plain (string response))))))))
 
 
 (def app (handler *routes*))
