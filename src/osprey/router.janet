@@ -1,10 +1,13 @@
 (import halo)
 (import path)
+(import cipher)
+(import ./session)
 (import ./helpers :prefix "")
 
 (def- *routes* @[])
 (def- *before-fns* @[])
 (def- *after-fns* @[])
+(def- *osprey-after-fns* @[])
 
 (defn- slash-suffix [p]
   (if (keyword? (last p))
@@ -109,7 +112,7 @@
 (defn- run-after-fns [response request]
   (var res response)
 
-  (each [patt f] *after-fns*
+  (each [patt f] [;*after-fns* ;*osprey-after-fns*]
     (when (any? (wildcard-params patt (request :uri)))
       (set res (f res request))))
 
@@ -240,6 +243,10 @@
   (array/push *after-fns* [uri args]))
 
 
+(defn- add-osprey-after [uri args]
+  (array/push *osprey-after-fns* [uri args]))
+
+
 (defmacro after [uri & *osprey-args*]
   (with-syms [$uri]
     ~(let [,$uri ,uri]
@@ -248,6 +255,16 @@
                                   :body body
                                   :params params} request]
                              (do ,;*osprey-args*)))))))
+
+
+(defmacro- after-last [uri & *osprey-args*]
+  (with-syms [$uri]
+    ~(let [,$uri ,uri]
+       (,add-osprey-after ,$uri (fn [response &opt request]
+                                  (let [{:headers headers
+                                         :body body
+                                         :params params} request]
+                                    (do ,;*osprey-args*)))))))
 
 
 (defn server [&opt port host]
@@ -302,6 +319,13 @@
       ;body]))
 
 
+(defn add-header [response key value]
+  (let [val (get-in response [:headers key])]
+    (if (indexed? val)
+      (update-in response [:headers key] array/push value)
+      (put-in response [:headers key] value))))
+
+
 (defn- enable-static-files [public-folder]
   (after "*"
          (if response
@@ -310,7 +334,24 @@
              {:file (path/join public-folder (request :uri))}))))
 
 
+(defn- enable-sessions [options]
+  (let [secret (get options :secret (cipher/encryption-key))]
+    (before "*"
+            (set! session (session/decrypt secret request)))
+
+    (after-last "*"
+                (let [response (if (dictionary? response)
+                                 response
+                                 (ok text/plain (string response)))]
+                   (as-> (session/encrypt secret session) ?
+                         (session/cookie ? options)
+                         (add-header response "Set-Cookie" ?))))))
+
+
 (defn enable [key &opt val]
   (case key
     :static-files
-    (enable-static-files val)))
+    (enable-static-files val)
+
+    :sessions
+    (enable-sessions val)))
