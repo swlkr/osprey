@@ -2,12 +2,15 @@
 (import path)
 (import cipher)
 (import ./session)
+(import ./csrf)
+(import ./form)
 (import ./helpers :prefix "")
 
 (def- *routes* @[])
 (def- *before-fns* @[])
 (def- *after-fns* @[])
 (def- *osprey-after-fns* @[])
+(var- *session-secret* nil)
 
 (defn- slash-suffix [p]
   (if (keyword? (last p))
@@ -160,6 +163,29 @@
   (array/push *routes* [method uri f]))
 
 
+(defn- route-url [string-route &opt params]
+  (default params @{})
+  (var mut-string-route string-route)
+  (loop [[k v] :in (pairs params)]
+    (set mut-string-route (string/replace (route-param k) (string v) mut-string-route))
+    (when (and (= k :*)
+               (indexed? v))
+      (loop [wc* :in v]
+        (set mut-string-route (string/replace "*" (string wc*) mut-string-route)))))
+  mut-string-route)
+
+
+(defn form [csrf-token str & form-args]
+  (let [[params] form-args
+        params (if (dictionary? params) params @{})
+        body (if (dictionary? (first form-args)) (drop 1 form-args) form-args)
+        uri (route-url str params)]
+    [:form @{:method "post" :action uri}
+      (when csrf-token
+        [:input {:type "hidden" :name "__csrf-token" :value csrf-token}])
+      ;body]))
+
+
 (defmacro GET
   [uri & *osprey-args*]
   (with-syms [$uri]
@@ -170,7 +196,8 @@
                      (let [{:params params
                             :body body
                             :headers headers} request
-                           render (partial render request)]
+                           render (partial render request)
+                           form (partial form (get request :csrf-token))]
                        (do ,;*osprey-args*)))))))
 
 
@@ -240,7 +267,8 @@
        (,add-before ,$uri (fn [request]
                             (let [{:headers headers
                                    :body body
-                                   :params params} request]
+                                   :params params
+                                   :method method} request]
                                (do ,;*osprey-args*)))))))
 
 
@@ -279,18 +307,6 @@
   (halo2/server app port))
 
 
-(defn- route-url [string-route &opt params]
-  (default params @{})
-  (var mut-string-route string-route)
-  (loop [[k v] :in (pairs params)]
-    (set mut-string-route (string/replace (route-param k) (string v) mut-string-route))
-    (when (and (= k :*)
-               (indexed? v))
-      (loop [wc* :in v]
-        (set mut-string-route (string/replace "*" (string wc*) mut-string-route)))))
-  mut-string-route)
-
-
 # alias route-url to href
 # for anchor tags
 (def href route-url)
@@ -315,15 +331,6 @@
       :headers @{"Location" uri}}))
 
 
-(defn form [str & form-args]
-  (let [[params] form-args
-        params (if (dictionary? params) params @{})
-        body (if (dictionary? (first form-args)) (drop 1 form-args) form-args)
-        uri (route-url str params)]
-    [:form @{:method "post" :action uri}
-      ;body]))
-
-
 (defn add-header [response key value]
   (let [val (get-in response [:headers key])]
     (if (indexed? val)
@@ -340,17 +347,36 @@
 
 
 (defn- enable-sessions [options]
-  (let [secret (get options :secret (cipher/encryption-key))]
-    (before "*"
-            (set! session (session/decrypt secret request)))
+  (set *session-secret* (get options :secret (cipher/encryption-key)))
 
-    (after-last "*"
-                (let [response (if (dictionary? response)
-                                 response
-                                 (ok text/plain (string response)))]
-                   (as-> (session/encrypt secret session) ?
-                         (session/cookie ? options)
-                         (add-header response "Set-Cookie" ?))))))
+  (before "*"
+          (let [o-session (session/decrypt *session-secret* request)]
+            (set! session (get o-session :user))))
+
+  (after-last "*"
+              (let [response (if (dictionary? response)
+                               response
+                               (ok text/plain (string response)))]
+                 (as-> (session/encrypt *session-secret*
+                                        {:user session
+                                         :csrf-token (eval 'csrf-token)}) ?
+                       (session/cookie ? options)
+                       (add-header response "Set-Cookie" ?)))))
+
+
+(defn- enable-csrf-tokens []
+  (before "*"
+          (if (= "POST" method)
+            (let [session (session/decrypt *session-secret* request)
+                  parsed-body (form/decode body)]
+              (unless (csrf/tokens-equal? (csrf/request-token headers parsed-body) (csrf/session-token session))
+                (halt @{:status 403 :body "Invalid CSRF Token" :headers @{"Content-Type" "text/plain"}}))))
+
+          # set a new token
+          (set! csrf-token (csrf/token))
+
+          # mask the token for forms
+          (put request :csrf-token (csrf/mask csrf-token))))
 
 
 (defn enable [key &opt val]
@@ -359,4 +385,7 @@
     (enable-static-files val)
 
     :sessions
-    (enable-sessions val)))
+    (enable-sessions val)
+
+    :csrf-tokens
+    (enable-csrf-tokens)))
