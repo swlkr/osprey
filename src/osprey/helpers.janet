@@ -41,9 +41,9 @@
         ,(get binding 1)))
 
 
-(def text/html @{"Content-Type" "text/html"})
+(def text/html @{"Content-Type" "text/html; charset=UTF-8"})
 (def text/plain @{"Content-Type" "text/plain"})
-(def application/json @{"Content-Type" "application/json"})
+(def application/json @{"Content-Type" "application/json; charset=UTF-8"})
 
 
 (defn ok [headers body]
