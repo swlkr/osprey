@@ -7,8 +7,8 @@
                  "https://github.com/janet-lang/path"]
   :author "Sean Walker"
   :license "MIT"
-  :url "https://github.com/osprey-framework/osprey"
-  :repo "https://github.com/osprey-framework/osprey")
+  :url "https://github.com/swlkr/osprey"
+  :repo "git+https://github.com/swlkr/osprey")
 
 (declare-source
   :source @["src/osprey" "src/osprey.janet"])
