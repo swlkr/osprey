@@ -50,3 +50,8 @@
   @{:status 200
     :body body
     :headers headers})
+
+
+(defn inspect [val]
+  (printf "%q" val)
+  val)
