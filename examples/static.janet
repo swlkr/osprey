@@ -2,6 +2,6 @@
 
 (enable :static-files)
 
-(GET "/" "dynamic")
+(GET "/dynamic" "dynamic")
 
 (server :9001)
