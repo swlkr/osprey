@@ -7,7 +7,7 @@
 
 # before everything try to parse json body
 (before "*"
-  (when body
+  (when (and body (not (empty? body)))
     (update request :body json/decode)))
 
 # before "/todos/:id"
@@ -18,7 +18,7 @@
 # after any request return json encoded values
 (after "*"
   (ok application/json
-      (json/encode response)))
+     (-> response json/encode freeze)))
 
 # just a nice status message on root
 (GET "/" {:status "up"})
