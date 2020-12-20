@@ -304,7 +304,7 @@
   (default port 0)
   (default host "localhost")
 
-  (halo2/server app port))
+  (halo2/server app port host))
 
 
 # alias route-url to href
