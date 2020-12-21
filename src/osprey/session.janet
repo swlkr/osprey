@@ -46,14 +46,14 @@
          :expires expires
          :max-age max-age} (merge default-options options)
 
-         parts [(string "session=" session)
-                (if samesite (string "SameSite=" samesite) "")
-                (if httponly "HttpOnly" "")
-                (if path (string "Path=" path) "")
-                (if secure "Secure" "")
-                (if domain (string "Domain=" domain) "")
-                (if expires (string "Expires=" expires) "")
-                (if max-age (string "Max-Age=" max-age) "")]]
+        parts [(string "session=" session)
+               (if samesite (string "SameSite=" samesite) "")
+               (if httponly "HttpOnly" "")
+               (if path (string "Path=" path) "")
+               (if secure "Secure" "")
+               (if domain (string "Domain=" domain) "")
+               (if expires (string "Expires=" expires) "")
+               (if max-age (string "Max-Age=" max-age) "")]]
 
     (-> (filter (comp not empty?) parts)
         (string/join "; "))))

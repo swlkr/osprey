@@ -9,36 +9,36 @@
 
 # after any request that isn't a redirect, slap a layout and html encode
 (after "*"
-  (if (dictionary? response)
-      response
-      (ok text/html
-          (html/encode
-            (doctype :html5)
-            [:html {:lang "en"}
-              [:head
-               [:title (request :uri)]]
-              [:body response]]))))
+       (if (dictionary? response)
+         response
+         (ok text/html
+             (html/encode
+               (doctype :html5)
+               [:html {:lang "en"}
+                [:head
+                 [:title (request :uri)]]
+                [:body response]]))))
 
 (GET "/"
-  [:div
-   (if session
-       [:div "yes, there is a session!"]
-       [:div "no, there is not a session"])
+     [:div
+      (if session
+        [:div "yes, there is a session!"]
+        [:div "no, there is not a session"])
 
-   (form "/sessions"
-         [:input {:type "submit" :value "Sign in"}])
+      (form "/sessions"
+            [:input {:type "submit" :value "Sign in"}])
 
-   (form "/sessions/delete"
-         [:input {:type "submit" :value "Sign out"}])])
+      (form "/sessions/delete"
+            [:input {:type "submit" :value "Sign out"}])])
 
 (POST "/sessions"
-  (set session "session")
+      (set session "session")
 
-  (redirect "/"))
+      (redirect "/"))
 
 (POST "/sessions/delete"
-  (set session nil)
+      (set session nil)
 
-  (redirect "/"))
+      (redirect "/"))
 
 (server 9001)

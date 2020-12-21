@@ -71,11 +71,11 @@
         {:uri uri :method method} request
         uri (first (string/split "?" uri))]
 
-         # check methods match first
+    # check methods match first
     (and (= (string/ascii-lower method)
             (string/ascii-lower route-method))
 
-             # check that the url isn't an exact match
+         # check that the url isn't an exact match
          (or (= route-url uri)
 
              # check for urls with params
@@ -98,7 +98,7 @@
              (and (string/find "*" route-url)
                   (let [idx (string/find "*" route-url)
                         sub (string/slice route-url 0 idx)]
-                     (string/has-prefix? sub uri)))))))
+                    (string/has-prefix? sub uri)))))))
 
 
 (defn- find-route [routes request]
@@ -130,7 +130,8 @@
   "Creates a handler function from routes. Returns nil when handler/route doesn't exist."
   [routes]
   (fn [request]
-    (prompt :halt
+    (prompt
+      :halt
       (let [route (find-route routes request)
             [method uri] route
             f (last route)
@@ -181,9 +182,9 @@
         body (if (dictionary? (first form-args)) (drop 1 form-args) form-args)
         uri (route-url str params)]
     [:form @{:method "post" :action uri}
-      (when csrf-token
-        [:input {:type "hidden" :name "__csrf-token" :value csrf-token}])
-      ;body]))
+     (when csrf-token
+       [:input {:type "hidden" :name "__csrf-token" :value csrf-token}])
+     ;body]))
 
 
 (defmacro GET
@@ -191,14 +192,14 @@
   (with-syms [$uri]
     ~(let [,$uri ,uri]
        (,add-route :get
-                   ,$uri
-                   (fn [request]
-                     (let [{:params params
-                            :body body
-                            :headers headers} request
-                           render (partial render request)
-                           form (partial form (get request :csrf-token))]
-                       (do ,;*osprey-args*)))))))
+          ,$uri
+          (fn [request]
+            (let [{:params params
+                   :body body
+                   :headers headers} request
+                  render (partial render request)
+                  form (partial form (get request :csrf-token))]
+              (do ,;*osprey-args*)))))))
 
 
 (defmacro POST
@@ -206,13 +207,13 @@
   (with-syms [$uri]
     ~(let [,$uri ,uri]
        (,add-route :post
-                   ,$uri
-                   (fn [request]
-                     (let [{:params params
-                            :body body
-                            :headers headers} request
-                           render (partial render request)]
-                       (do ,;*osprey-args*)))))))
+          ,$uri
+          (fn [request]
+            (let [{:params params
+                   :body body
+                   :headers headers} request
+                  render (partial render request)]
+              (do ,;*osprey-args*)))))))
 
 
 (defmacro PUT
@@ -220,13 +221,13 @@
   (with-syms [$uri]
     ~(let [,$uri ,uri]
        (,add-route :put
-                   ,$uri
-                   (fn [request]
-                     (let [{:params params
-                            :body body
-                            :headers headers} request
-                           render (partial render request)]
-                       (do ,;*osprey-args*)))))))
+          ,$uri
+          (fn [request]
+            (let [{:params params
+                   :body body
+                   :headers headers} request
+                  render (partial render request)]
+              (do ,;*osprey-args*)))))))
 
 
 (defmacro PATCH
@@ -234,13 +235,13 @@
   (with-syms [$uri]
     ~(let [,$uri ,uri]
        (,add-route :patch
-                   ,$uri
-                   (fn [request]
-                     (let [{:params params
-                            :body body
-                            :headers headers} request
-                           render (partial render request)]
-                       (do ,;*osprey-args*)))))))
+          ,$uri
+          (fn [request]
+            (let [{:params params
+                   :body body
+                   :headers headers} request
+                  render (partial render request)]
+              (do ,;*osprey-args*)))))))
 
 
 (defmacro DELETE
@@ -248,13 +249,13 @@
   (with-syms [$uri]
     ~(let [,$uri ,uri]
        (,add-route :delete
-                   ,$uri
-                   (fn [request]
-                     (let [{:params params
-                            :body body
-                            :headers headers} request
-                           render (partial render request)]
-                       (do ,;*osprey-args*)))))))
+          ,$uri
+          (fn [request]
+            (let [{:params params
+                   :body body
+                   :headers headers} request
+                  render (partial render request)]
+              (do ,;*osprey-args*)))))))
 
 
 (defn- add-before [uri args]
@@ -264,12 +265,13 @@
 (defmacro before [uri & *osprey-args*]
   (with-syms [$uri]
     ~(let [,$uri ,uri]
-       (,add-before ,$uri (fn [request]
-                            (let [{:headers headers
-                                   :body body
-                                   :params params
-                                   :method method} request]
-                               (do ,;*osprey-args*)))))))
+       (,add-before ,$uri
+          (fn [request]
+            (let [{:headers headers
+                   :body body
+                   :params params
+                   :method method} request]
+              (do ,;*osprey-args*)))))))
 
 
 (defn- add-after [uri args]
@@ -283,21 +285,23 @@
 (defmacro after [uri & *osprey-args*]
   (with-syms [$uri]
     ~(let [,$uri ,uri]
-       (,add-after ,$uri (fn [response &opt request]
-                           (let [{:headers headers
-                                  :body body
-                                  :params params} request]
-                             (do ,;*osprey-args*)))))))
+       (,add-after ,$uri
+          (fn [response &opt request]
+            (let [{:headers headers
+                   :body body
+                   :params params} request]
+              (do ,;*osprey-args*)))))))
 
 
 (defmacro- after-last [uri & *osprey-args*]
   (with-syms [$uri]
     ~(let [,$uri ,uri]
-       (,add-osprey-after ,$uri (fn [response &opt request]
-                                  (let [{:headers headers
-                                         :body body
-                                         :params params} request]
-                                    (do ,;*osprey-args*)))))))
+       (,add-osprey-after ,$uri
+          (fn [response &opt request]
+            (let [{:headers headers
+                   :body body
+                   :params params} request]
+              (do ,;*osprey-args*)))))))
 
 
 (defn server [&opt port host]
@@ -361,11 +365,11 @@
               (let [response (if (dictionary? response)
                                response
                                (ok text/plain (string response)))]
-                 (as-> (session/encrypt *session-secret*
-                                        {:user session
-                                         :csrf-token (eval 'csrf-token)}) ?
-                       (session/cookie ? options)
-                       (add-header response "Set-Cookie" ?)))))
+                (as-> (session/encrypt *session-secret*
+                                       {:user session
+                                        :csrf-token (eval 'csrf-token)}) ?
+                      (session/cookie ? options)
+                      (add-header response "Set-Cookie" ?)))))
 
 
 (defn- enable-csrf-tokens []
