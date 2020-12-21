@@ -27,7 +27,7 @@
                   [:xhtml1.0 :frameset] (raw `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">`)
                   [:xhtml1.1 ""] (raw `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">`)
                   [:xhtml1.1 :basic] (raw `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML Basic 1.1//EN" "http://www.w3.org/TR/xhtml-basic/xhtml-basic11.dtd">`)}]
-      (get doctypes key "")))
+    (get doctypes key "")))
 
 
 (def- void-elements
@@ -86,9 +86,9 @@
 (defn- first-child
   [children]
   (if (indexed? children)
-      (when (not (empty? children))
-        (first children))
-      children))
+    (when (not (empty? children))
+      (first children))
+    children))
 
 
 (defn- valid-children?
@@ -120,11 +120,11 @@
 (defn- validate-element
   [name attrs children]
   (unless (keyword? name)
-          (error "name must be a keyword"))
+    (error "name must be a keyword"))
   (unless (dictionary? attrs)
-          (error "attributes must be a dictionary"))
+    (error "attributes must be a dictionary"))
   (unless (valid-children? children)
-          (error "children must be a string, number, or index")))
+    (error "children must be a string, number, or index")))
 
 
 (defn- create-element
@@ -134,8 +134,8 @@
     (void-element? name) (opening-tag name attrs)
     (text-element? name) (first children)
     :else (string (opening-tag name attrs)
-            (create-children create children)
-            (closing-tag name))))
+                  (create-children create children)
+                  (closing-tag name))))
 
 
 (defn- create
