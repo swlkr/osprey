@@ -1,5 +1,4 @@
 (import cipher)
-(import jdn)
 (import ./helpers :prefix "")
 
 
@@ -23,12 +22,12 @@
     (try
       (as-> cookie ?
             (cipher/decrypt key ?)
-            (jdn/decode ?))
+            (parse ?))
       ([_] nil))))
 
 
 (defn encrypt [key value]
-  (->> (jdn/encode value)
+  (->> (string/format "%j" value)
        (cipher/encrypt key)))
 
 

@@ -4,8 +4,7 @@
   :dependencies ["https://github.com/joy-framework/halo2"
                  "https://github.com/joy-framework/cipher"
                  "https://github.com/andrewchambers/janet-uri"
-                 "https://github.com/janet-lang/path"
-                 "https://github.com/andrewchambers/janet-jdn"]
+                 "https://github.com/janet-lang/path"]
   :author "Sean Walker"
   :license "MIT"
   :url "https://github.com/swlkr/osprey"
