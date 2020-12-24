@@ -289,7 +289,8 @@
           (fn [response &opt request]
             (let [{:headers headers
                    :body body
-                   :params params} request]
+                   :params params
+                   :method method} request]
               (do ,;*osprey-args*)))))))
 
 
