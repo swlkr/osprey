@@ -353,7 +353,7 @@
                  file-path (if (string/has-suffix? "/" uri)
                              (string uri "index.html")
                              uri)]
-             {:file (path/join public-folder file-path)}))))
+             @{:file (path/join public-folder file-path)}))))
 
 
 (defn- enable-sessions [options]
