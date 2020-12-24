@@ -35,7 +35,8 @@
 
 
 (defn decode [str]
-  (when (string? str)
+  (when (or (string? str)
+            (buffer? str))
     (as-> (string/replace-all "+" "%20" str) ?
           (string/split "&" ?)
           (filter |(not (empty? $)) ?)
