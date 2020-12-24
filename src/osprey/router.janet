@@ -139,6 +139,7 @@
             params (or (route-params uri (request :uri)) @{})
             request (merge request {:params params
                                     :wildcard wildcard
+                                    :text-body (request :body)
                                     :route-uri (get route 1)})]
 
         # run all before-fns before request
@@ -373,19 +374,24 @@
                       (add-header response "Set-Cookie" ?)))))
 
 
-(defn- enable-csrf-tokens []
+(defn- enable-csrf-tokens [&opt options]
+  (default options {:skip []})
+
   (before "*"
-          (if (= "POST" method)
-            (let [session (session/decrypt *session-secret* request)
-                  parsed-body (form/decode body)]
-              (unless (csrf/tokens-equal? (csrf/request-token headers parsed-body) (csrf/session-token session))
-                (halt @{:status 403 :body "Invalid CSRF Token" :headers @{"Content-Type" "text/plain"}}))))
+          (when (find (partial = (request :route-uri)) (options :skip))
+            (break))
 
-          # set a new token
-          (set! csrf-token (csrf/token))
+          (let [session (session/decrypt *session-secret* request)]
+            (when (= "POST" method)
+              (let [parsed-body (form/decode (request :text-body))]
+                (unless (csrf/tokens-equal? (csrf/request-token headers parsed-body) (csrf/session-token session))
+                  (halt @{:status 403 :body "Invalid CSRF Token" :headers @{"Content-Type" "text/plain"}}))))
 
-          # mask the token for forms
-          (put request :csrf-token (csrf/mask csrf-token))))
+            # set a new token
+            (set! csrf-token (get session :csrf-token (csrf/token)))
+
+            # mask the token for forms
+            (put request :csrf-token (csrf/mask csrf-token)))))
 
 
 (defn enable [key &opt val]
@@ -397,4 +403,4 @@
     (enable-sessions val)
 
     :csrf-tokens
-    (enable-csrf-tokens)))
+    (enable-csrf-tokens val)))
