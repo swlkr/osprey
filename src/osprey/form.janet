@@ -43,3 +43,7 @@
           (map |(string/split "=" $) ?)
           (body-table ?)
           (map-keys keyword ?))))
+
+
+(defn form? [request]
+  (string/has-prefix? "application/x-www-form-urlencoded" (get-in request [:headers "Content-Type"] "")))

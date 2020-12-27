@@ -8,3 +8,4 @@
 (def html/encode encode)
 (def html/unsafe raw)
 (def multipart? multipart/multipart?)
+(def form? form/form?)
