@@ -271,7 +271,8 @@
             (let [{:headers headers
                    :body body
                    :params params
-                   :method method} request]
+                   :method method} request
+                  form (partial form (get request :csrf-token))]
               (do ,;*osprey-args*)))))))
 
 
@@ -291,7 +292,8 @@
             (let [{:headers headers
                    :body body
                    :params params
-                   :method method} request]
+                   :method method} request
+                  form (partial form (get request :csrf-token))]
               (do ,;*osprey-args*)))))))
 
 
