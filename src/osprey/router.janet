@@ -162,6 +162,13 @@
   (app (merge (or req request) {:uri url :method "GET"})))
 
 
+(defn view [request uri]
+  (let [route (-> (filter (fn [[method uri*]] (and (= method :get) (= uri uri*))) *routes*)
+                  (first))
+        f (last route)]
+    (f request)))
+
+
 (defn- add-route [method uri f]
   (array/push *routes* [method uri f]))
 
