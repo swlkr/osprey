@@ -185,15 +185,11 @@
   mut-string-route)
 
 
-(defn form [csrf-token str & form-args]
-  (let [[params] form-args
-        params (if (dictionary? params) params @{})
-        body (if (dictionary? (first form-args)) (drop 1 form-args) form-args)
-        uri (route-url str params)]
-    [:form @{:method "post" :action uri}
-     (when csrf-token
-       [:input {:type "hidden" :name "__csrf-token" :value csrf-token}])
-     ;body]))
+(defn form [csrf-token attrs & body]
+  [:form (merge {:method "post"} attrs)
+   (when csrf-token
+     [:input {:type "hidden" :name "__csrf-token" :value csrf-token}])
+   ;body])
 
 
 (defmacro GET
@@ -207,7 +203,8 @@
                    :body body
                    :headers headers} request
                   render (partial render request)
-                  form (partial form (get request :csrf-token))]
+                  form (partial form (get request :csrf-token))
+                  view (partial view request)]
               (do ,;*osprey-args*)))))))
 
 
