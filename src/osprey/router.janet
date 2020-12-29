@@ -4,6 +4,7 @@
 (import ./session)
 (import ./csrf)
 (import ./form)
+(import ./multipart)
 (import ./helpers :prefix "")
 
 (def- *routes* @[])
@@ -384,10 +385,19 @@
             (break))
 
           (let [session (session/decrypt *session-secret* request)]
-            (when (= "POST" method)
-              (let [parsed-body (form/decode (request :text-body))]
-                (unless (csrf/tokens-equal? (csrf/request-token headers parsed-body) (csrf/session-token session))
-                  (halt @{:status 403 :body "Invalid CSRF Token" :headers @{"Content-Type" "text/plain"}}))))
+            (when-let [_ (= "POST" method)
+                       parsed-body (cond
+                                     (multipart/multipart? request)
+                                     (multipart/params request)
+
+                                     (form/form? request)
+                                     (form/decode (request :text-body))
+
+                                     :else
+                                     nil)]
+
+              (unless (csrf/tokens-equal? (csrf/request-token headers parsed-body) (csrf/session-token session))
+                (halt @{:status 403 :body "Invalid CSRF Token" :headers @{"Content-Type" "text/plain"}})))
 
             # set a new token
             (set! csrf-token (get session :csrf-token (csrf/token)))
