@@ -29,7 +29,7 @@
 
 
 (defn request-token [headers body]
-  (let [token (or (get headers "X-CSRF-TOKEN")
+  (let [token (or (get headers "X-CSRF-Token")
                   (get body :__csrf-token))]
     (unmask token)))
 
