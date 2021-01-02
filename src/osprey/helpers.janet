@@ -53,5 +53,5 @@
 
 
 (defn inspect [val]
-  (printf "%q" val)
+  (printf "%m" val)
   val)
