@@ -1,4 +1,4 @@
-(use ../src/osprey)
+(import ../src/osprey :prefix "")
 
 (enable :sessions {:secure false})
 (enable :csrf-tokens)
@@ -27,7 +27,7 @@
        [:input {:type "submit" :value "Submit"}]]
 
       [:div "csrf token in form. returns 302"]
-      (form "/with-csrf-token"
+      (form {:action "/with-csrf-token"}
             [:input {:type "submit" :value "Submit"}])])
 
 (POST "/without-csrf-token"

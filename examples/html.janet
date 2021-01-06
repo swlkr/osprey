@@ -1,8 +1,8 @@
-(use ../src/osprey)
+(import ../src/osprey :prefix "")
 
 # put the todos somewhere
 # since there isn't a database
-(def todos @{})
+(def todos @{0 {:id 0 :name "Osprey" :done true}})
 
 
 # coerce false/true and numbers
@@ -78,10 +78,9 @@
                  [:span (todo :name)]
                  [:span (if (todo :done) " is done!" "")]
                  [:div
-                  [:a {:href (href "/todos/:id/edit" todo)}
-                   "edit"]
+                  [:a {:href (href "/todos/:id/edit" todo)} "edit"]
                   [:span " "]
-                  (form "/todos/:id/delete" todo
+                  (form {:action (href "/todos/:id/delete" todo)}
                         [:input {:type "submit" :value "delete"}])]])]])
 
 
@@ -92,7 +91,7 @@
 
 
 (GET "/todo"
-     (form "/todos"
+     (form {:action "/todos"}
            [:div
             [:label "name"]
             [:br]
@@ -119,7 +118,7 @@
 
 
 (GET "/todos/:id/edit"
-     (form "/todos/:id/update" todo
+     (form {:action (href "/todos/:id/update" todo)}
            [:div
             [:label "Name"]
             [:br]

@@ -1,4 +1,4 @@
-(use ../src/osprey)
+(import ../src/osprey :prefix "")
 
 (enable :sessions {:secure false})
 
@@ -25,10 +25,10 @@
         [:div "yes, there is a session!"]
         [:div "no, there is not a session"])
 
-      (form "/sessions"
+      (form {:action "/sessions"}
             [:input {:type "submit" :value "Sign in"}])
 
-      (form "/sessions/delete"
+      (form {:action "/sessions/delete"}
             [:input {:type "submit" :value "Sign out"}])])
 
 (POST "/sessions"
