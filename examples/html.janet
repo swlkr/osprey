@@ -2,7 +2,7 @@
 
 # put the todos somewhere
 # since there isn't a database
-(def todos @{0 {:id 0 :name "osprey" :done true}})
+(def todos @{0 {:id 0 :name "Osprey" :done true}})
 
 
 # coerce false/true and numbers
