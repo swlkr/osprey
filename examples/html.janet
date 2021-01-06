@@ -132,7 +132,7 @@
 
 # this updates todos in the dictionary
 (POST "/todos/:id/update"
-      (update todos (tracev id) merge body)
+      (update todos id merge body)
       (redirect "/todos"))
 
 
