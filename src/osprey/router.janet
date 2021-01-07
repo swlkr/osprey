@@ -218,7 +218,9 @@
             (let [{:params params
                    :body body
                    :headers headers} request
-                  render (partial render request)]
+                  render (partial render request)
+                  form (partial form (get request :csrf-token))
+                  view (partial view request)]
               (do ,;*osprey-args*)))))))
 
 
