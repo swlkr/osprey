@@ -2,4 +2,4 @@
 
 (enable :static-files)
 
-(server :9001)
+(server 9001)
