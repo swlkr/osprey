@@ -49,14 +49,15 @@
 
 
 (defn- route-params [app-url path]
-  (let [app-parts (string/split "/" app-url)
-        req-parts (string/split "/" path)]
-    (as-> (interleave app-parts req-parts) ?
-          (partition 2 ?)
-          (filter (fn [[x]] (route-param? x)) ?)
-          (map (fn [[x y]] @[(keyword (drop 1 x)) y]) ?)
-          (mapcat identity ?)
-          (table ;?))))
+  (when (and app-url path)
+    (let [app-parts (string/split "/" app-url)
+          req-parts (string/split "/" path)]
+      (as-> (interleave app-parts req-parts) ?
+            (partition 2 ?)
+            (filter (fn [[x]] (route-param? x)) ?)
+            (map (fn [[x y]] @[(keyword (drop 1 x)) y]) ?)
+            (mapcat identity ?)
+            (table ;?)))))
 
 
 (defn- part? [[s1 s2]]
