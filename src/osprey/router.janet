@@ -48,16 +48,15 @@
     (string ":" val)))
 
 
-(defn- route-params [app-url uri]
-  (when (and app-url uri)
-    (let [app-parts (string/split "/" app-url)
-          req-parts (string/split "/" uri)]
-      (as-> (interleave app-parts req-parts) ?
-            (partition 2 ?)
-            (filter (fn [[x]] (route-param? x)) ?)
-            (map (fn [[x y]] @[(keyword (drop 1 x)) (first (string/split "?" y))]) ?)
-            (mapcat identity ?)
-            (table ;?)))))
+(defn- route-params [app-url path]
+  (let [app-parts (string/split "/" app-url)
+        req-parts (string/split "/" path)]
+    (as-> (interleave app-parts req-parts) ?
+          (partition 2 ?)
+          (filter (fn [[x]] (route-param? x)) ?)
+          (map (fn [[x y]] @[(keyword (drop 1 x)) y]) ?)
+          (mapcat identity ?)
+          (table ;?))))
 
 
 (defn- part? [[s1 s2]]
@@ -70,8 +69,7 @@
 
 (defn- route? [request app-route]
   (let [[route-method route-url] app-route
-        {:uri uri :method method} request
-        uri (first (string/split "?" uri))]
+        {:path uri :method method} request]
 
     # check methods match first
     (and (= (string/ascii-lower method)
