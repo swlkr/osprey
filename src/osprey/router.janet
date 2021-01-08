@@ -137,7 +137,7 @@
             route (find-route routes request)
             [method uri f] route
             wildcard (wildcard-params uri (request :uri))
-            params (route-params uri (request :path))
+            params (or (route-params uri (request :path)) {})
             params (merge params (map-keys keyword (get request :query {})))
             request (merge request {:params params
                                     :wildcard wildcard
