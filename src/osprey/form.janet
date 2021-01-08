@@ -1,19 +1,5 @@
 (import uri)
-
-
-(defn map-keys
-  `Executes a function on a dictionary's keys and
-   returns a struct
-
-   Example
-
-   (map-keys snake-case {:created_at "" :uploaded_by ""}) -> {:created-at "" :uploaded-by ""}
-  `
-  [f dict]
-  (let [acc @{}]
-    (loop [[k v] :pairs dict]
-      (put acc (f k) v))
-    acc))
+(import ./helpers :prefix "")
 
 
 (defn- indexed-param? [str]
