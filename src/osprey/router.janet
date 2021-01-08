@@ -1,6 +1,7 @@
 (import halo2)
 (import path)
 (import cipher)
+(import uri)
 (import ./session)
 (import ./csrf)
 (import ./form)
@@ -133,11 +134,12 @@
   (fn [request]
     (prompt
       :halt
-      (let [route (find-route routes request)
-            [method uri] route
-            f (last route)
+      (let [request (merge request (uri/parse (request :uri)))
+            route (find-route routes request)
+            [method uri f] route
             wildcard (wildcard-params uri (request :uri))
-            params (or (route-params uri (request :uri)) @{})
+            params (route-params uri (request :path))
+            params (merge params (map-keys keyword (get request :query {})))
             request (merge request {:params params
                                     :wildcard wildcard
                                     :text-body (request :body)
