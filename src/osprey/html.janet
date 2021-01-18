@@ -140,14 +140,20 @@
 
 (defn- create
   [element]
-  (if (not (nil? element))
+  (cond
+    (nil? element)
+    ""
+
+    (string? element)
+    (escape element)
+
+    (indexed? element)
     (if (all valid-children? element)
-      (string/join (map create element) "")
+      (string/join (map create element))
       (let [[name attrs] element]
         (if (dictionary? attrs)
           (create-element create name attrs (filter truthy? (drop 2 element)))
-          (create-element create name {} (filter truthy? (drop 1 element))))))
-    ""))
+          (create-element create name {} (filter truthy? (drop 1 element))))))))
 
 
 (defn encode [& args]
