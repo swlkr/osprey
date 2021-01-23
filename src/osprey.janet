@@ -1,8 +1,8 @@
 (import ./osprey/router :prefix "" :export true)
 (import ./osprey/helpers :prefix "" :export true)
-(import ./osprey/html :prefix "" :export true)
 (import ./osprey/form :prefix "form/" :export true)
 (import ./osprey/multipart :prefix "multipart/" :export true)
+(import janet-html :prefix "" :export true)
 
 # convenience method for (use opsrey)
 (def html/encode encode)

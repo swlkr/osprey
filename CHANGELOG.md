@@ -16,3 +16,4 @@ All notable changes to this project will be documented in this file.
 - Add `halt` function
 - Add multipart/form-data parsing
 - Change `html/encode` to handle strings without tags
+- Use `janet-html` to share html rendering with joy
