@@ -127,18 +127,39 @@
   (return :halt response))
 
 
+(defn parse-body [request]
+  (cond
+    (multipart/multipart? request)
+    (multipart/params request)
+
+    (form/form? request)
+    (form/decode (get request :body))
+
+    :else
+    @{}))
+
+
+(defn add-header [response key value]
+  (let [val (get-in response [:headers key])]
+    (if (indexed? val)
+      (update-in response [:headers key] array/push value)
+      (put-in response [:headers key] value))))
+
+
 (defn- handler
   "Creates a handler function from routes. Returns nil when handler/route doesn't exist."
   [routes]
   (fn [request]
     (prompt
       :halt
+
       (let [request (merge request (uri/parse (request :uri)))
             route (find-route routes request)
             [method uri f] route
             wildcard (wildcard-params uri (request :uri))
             params (or (route-params uri (request :path)) {})
             params (merge params (map-keys keyword (get request :query {})))
+            params (merge params (parse-body request))
             request (merge request {:params params
                                     :wildcard wildcard
                                     :text-body (request :body)
@@ -347,13 +368,6 @@
       :headers @{"Location" uri}}))
 
 
-(defn add-header [response key value]
-  (let [val (get-in response [:headers key])]
-    (if (indexed? val)
-      (update-in response [:headers key] array/push value)
-      (put-in response [:headers key] value))))
-
-
 (defn- enable-static-files [public-folder]
   (after "*"
          (if response
@@ -392,18 +406,8 @@
             (break))
 
           (let [session (session/decrypt *session-secret* request)]
-            (when-let [_ (= "POST" method)
-                       parsed-body (cond
-                                     (multipart/multipart? request)
-                                     (multipart/params request)
-
-                                     (form/form? request)
-                                     (form/decode (request :text-body))
-
-                                     :else
-                                     nil)]
-
-              (unless (csrf/tokens-equal? (csrf/request-token headers parsed-body) (csrf/session-token session))
+            (when (= "post" (string/ascii-lower method))
+              (unless (csrf/tokens-equal? (csrf/request-token headers params) (csrf/session-token session))
                 (halt @{:status 403 :body "Invalid CSRF Token" :headers @{"Content-Type" "text/plain"}})))
 
             # set a new token

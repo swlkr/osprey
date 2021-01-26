@@ -22,10 +22,14 @@
 
 (defn- unmask [masked-token]
   (when masked-token
-    (let [token (cipher/hex2bin masked-token)
-          pad (string/slice token 0 PADLENGTH)
-          csrf-token (string/slice token PADLENGTH)]
-      (xor-byte-strings pad csrf-token))))
+    (try
+      (let [token (cipher/hex2bin masked-token)
+            pad (string/slice token 0 PADLENGTH)
+            csrf-token (string/slice token PADLENGTH)]
+        (xor-byte-strings pad csrf-token))
+      ([err fib]
+       (unless (= err "failed to convert hex to binary")
+         (debug/stacktrace fib err))))))
 
 
 (defn request-token [headers body]

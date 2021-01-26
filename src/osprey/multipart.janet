@@ -3,7 +3,7 @@
 
 
 (defn multipart? [request]
-  (let [content-type (get-in request [:headers "Content-Type"])]
+  (let [content-type (get-in request [:headers "Content-Type"] "")]
     (string/has-prefix? "multipart/form-data" content-type)))
 
 
