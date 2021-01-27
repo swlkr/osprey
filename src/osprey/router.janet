@@ -412,6 +412,25 @@
             # mask the token for forms
             (put request :csrf-token (csrf/mask csrf-token)))))
 
+(defn- enable-logging [&opt options]
+  (def formats
+    (or options
+        (fn [start request response]
+          (def {:uri uri
+                :http-version version
+                :method method
+                :query-string qs} request)
+          (def fulluri (if (and qs (pos? (length qs))) (string uri "?" qs) uri))
+          (def elapsed (* 1000 (- (os/clock) start)))
+          (def status (or (get response :status) 200))
+          (printf "HTTP/%s %s %i %s elapsed %.3fms" version method status fulluri elapsed))))
+
+  (before "*"
+          (set! _start-clock (os/clock)))
+  (after "*"
+         (formats _start-clock request response)
+         response))
+
 
 (defn enable [key &opt val]
   (case key
@@ -422,4 +441,7 @@
     (enable-sessions val)
 
     :csrf-tokens
-    (enable-csrf-tokens val)))
+    (enable-csrf-tokens val)
+
+    :logging
+    (enable-logging val)))
