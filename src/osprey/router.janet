@@ -7,6 +7,7 @@
 (import ./form)
 (import ./multipart)
 (import ./helpers :prefix "")
+(import janet-html :as html)
 
 
 (def- *routes* @[])
@@ -431,23 +432,25 @@
   (setdyn :layout name))
 
 
-(defmacro layout [&opt name & *osprey-args*]
-  (with-syms [$name]
-    ~(,add-after "*"
-                 (fn [response request]
-                    (let [,$name ,name]
-                      (,use-layout (if (keyword? ,$name) ,$name :default))
+(defmacro layout [& *osprey-args*]
+  (if (keyword? (first *osprey-args*))
+    (do
+      ~(after "*"
+              (,content-type "text/html")
+              (if (= ,(first *osprey-args*) (dyn :layout))
+                (html/encode ,;(drop 1 *osprey-args*))
+                response)))
 
-                      (if (not= (dyn :layout) (if (keyword? ,$name) ,$name :default))
-                        response
-                        (let [{:headers headers
-                               :body body
-                               :params params
-                               :method method} request
-                              form (partial form (get request :csrf-token))]
-                           (if (keyword? ,$name)
-                             (do ,;*osprey-args*)
-                             (do ,[;name ;*osprey-args*])))))))))
+    (do
+      (use-layout :default)
+      ~(after "*"
+              (if (= :default (dyn :layout))
+                (do
+                  (,content-type "text/html")
+
+                  (,html/encode ,;*osprey-args*))
+                response)))))
+
 
 
 (defn server [&opt port host]
