@@ -26,7 +26,7 @@
 
 
 # halt works in handlers as well
-# try curl -v 'localhost:9001?bypass'
+# try curl -v 'localhost:9001?bypass='
 (GET "/protected"
      (unless (params :bypass)
        (halt {:status 401 :body "Nope." :headers {"Content-Type" "text/plain"}}))
