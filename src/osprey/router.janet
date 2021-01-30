@@ -8,11 +8,15 @@
 (import ./multipart)
 (import ./helpers :prefix "")
 
+
 (def- *routes* @[])
 (def- *before-fns* @[])
 (def- *after-fns* @[])
 (def- *osprey-after-fns* @[])
 (var- *session-secret* nil)
+(var- *not-found-fn* nil)
+(var- *layout* @{})
+
 
 (defn- slash-suffix [p]
   (if (keyword? (last p))
@@ -113,10 +117,10 @@
       (f request))))
 
 
-(defn- run-after-fns [response request]
+(defn- run-after-fns [response request after-fns]
   (var res response)
 
-  (each [patt f] [;*after-fns* ;*osprey-after-fns*]
+  (each [patt f] after-fns
     (when (any? (wildcard-params patt (request :uri)))
       (set res (f res request))))
 
@@ -139,11 +143,73 @@
     @{}))
 
 
-(defn add-header [response key value]
+(defn add-header
+  `Deprecated.
+
+   Use (header key value) instead.`
+  [response key value]
   (let [val (get-in response [:headers key])]
     (if (indexed? val)
       (update-in response [:headers key] array/push value)
       (put-in response [:headers key] value))))
+
+(defn header
+  `
+  Adds a header to the current response dyn
+
+  If the value is an array it uses array/push to add to the value
+
+  Returns the response dictionary
+  `
+  [key value]
+  (let [response (dyn :response)
+        val (get-in response [:headers key])]
+    (if (indexed? val)
+      (update-in response [:headers key] array/push value)
+      (put-in response [:headers key] value))))
+
+
+(defn content-type [ct]
+  (header "Content-Type" ct))
+
+
+(defn status [s]
+  (put (dyn :response) :status s))
+
+
+(defn- response-table
+  `Coerce any value into a response dictionary`
+  [response]
+  (if (dictionary? response)
+      (merge (dyn :response) response)
+      (put (dyn :response) :body response)))
+
+
+(defn- not-found-response [response request f]
+  (let [file (get response :file "")]
+    (cond
+      (halo2/file-exists? file)
+      response
+
+      (nil? f)
+      (if *not-found-fn*
+        (do
+          # run user defined 404 function
+          (status 404)
+          (halt (response-table (*not-found-fn* request))))
+        # otherwise return a basic not found plaintext 404
+        (halt @{:status 404
+                :body "not found"
+                :headers @{"Content-Type" "text/plain"}}))
+
+      :else
+      response)))
+
+
+(defn- redirect-response [response]
+  (if (empty? (dyn :redirect))
+    response
+    (merge response (dyn :redirect))))
 
 
 (defn- handler
@@ -165,16 +231,26 @@
                                     :text-body (request :body)
                                     :route-uri (get route 1)})]
 
-        # run all before-fns before request
-        (run-before-fns request)
+        (with-dyns [:response @{:status 200
+                                :headers @{"Content-Type" "text/plain"}}
+                    :redirect @{}
+                    :layout nil]
 
-        # run all after-fns after request
-        (let [response (f request)
-              response (run-after-fns response request)]
+          # run all before-fns before request
+          (run-before-fns request)
 
-          (if (dictionary? response)
-            response
-            (ok text/plain (string response))))))))
+          # run handler fn
+          (as-> (f request) ?
+                # run all after-fns after request
+                (run-after-fns ? request *after-fns*)
+                # coerce response into table
+                (response-table ?)
+                # check for redirects
+                (redirect-response ?)
+                # check for 404s
+                (not-found-response ? request f)
+                # apply session bits to response table
+                (run-after-fns ? request *osprey-after-fns*)))))))
 
 
 (def app (handler *routes*))
@@ -301,7 +377,8 @@
                    :body body
                    :params params
                    :method method} request
-                  form (partial form (get request :csrf-token))]
+                  form (partial form (get request :csrf-token))
+                  response (dyn :response)]
               (do ,;*osprey-args*)))))))
 
 
@@ -330,11 +407,47 @@
   (with-syms [$uri]
     ~(let [,$uri ,uri]
        (,add-osprey-after ,$uri
-          (fn [response &opt request]
+          (fn [response request]
             (let [{:headers headers
                    :body body
                    :params params} request]
               (do ,;*osprey-args*)))))))
+
+
+(defn- set-not-found [args]
+  (set *not-found-fn* args))
+
+
+(defmacro not-found [& *osprey-body*]
+   ~(,set-not-found (fn [request]
+                      (let [{:headers headers
+                             :params params
+                             :method method
+                             :body body} request]
+                        (do ,;*osprey-body*)))))
+
+
+(defn use-layout [name]
+  (setdyn :layout name))
+
+
+(defmacro layout [&opt name & *osprey-args*]
+  (with-syms [$name]
+    ~(,add-after "*"
+                 (fn [response request]
+                    (let [,$name ,name]
+                      (,use-layout (if (keyword? ,$name) ,$name :default))
+
+                      (if (not= (dyn :layout) (if (keyword? ,$name) ,$name :default))
+                        response
+                        (let [{:headers headers
+                               :body body
+                               :params params
+                               :method method} request
+                              form (partial form (get request :csrf-token))]
+                           (if (keyword? ,$name)
+                             (do ,;*osprey-args*)
+                             (do ,[;name ;*osprey-args*])))))))))
 
 
 (defn server [&opt port host]
@@ -364,8 +477,8 @@
   [str &opt params]
   (default params @{})
   (let [uri (route-url str params)]
-    @{:status 302
-      :headers @{"Location" uri}}))
+    (setdyn :redirect @{:status 302
+                        :headers @{"Location" uri}})))
 
 
 (defn- enable-static-files [public-folder]
