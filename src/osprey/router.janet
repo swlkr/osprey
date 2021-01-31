@@ -492,11 +492,11 @@
          (if response
            response
            (let [public-folder (or public-folder "public")
-                 uri (request :uri)
-                 file-path (if (string/has-suffix? "/" uri)
-                             (string uri "index.html")
-                             uri)]
-             @{:file (path/join public-folder file-path)}))))
+                 path (request :path)
+                 file-path (if (string/has-suffix? "/" path)
+                             (string path "index.html")
+                             path)]
+             (put (dyn :response) :file (path/join public-folder file-path))))))
 
 
 (defn- enable-sessions [options]
