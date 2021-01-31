@@ -433,24 +433,27 @@
 
 
 (defmacro layout [& *osprey-args*]
-  (if (keyword? (first *osprey-args*))
-    (do
-      ~(after "*"
-              (,content-type "text/html")
-              (if (= ,(first *osprey-args*) (dyn :layout))
-                (html/encode ,;(drop 1 *osprey-args*))
-                response)))
+  (var name :default)
+  (var *args* *osprey-args*)
 
-    (do
-      (use-layout :default)
-      ~(after "*"
-              (if (= :default (dyn :layout))
-                (do
-                  (,content-type "text/html")
+  (when (keyword? (first *osprey-args*))
+    (set name (first *osprey-args*))
+    (set *args* (drop 1 *osprey-args*)))
 
-                  (,html/encode ,;*osprey-args*))
+  (when (= name :default)
+    (use-layout :default))
+
+  (with-syms [$name]
+    ~(let [,$name ,name]
+
+      (after "*"
+             (if (and (tuple? response)
+                      (= (dyn :layout) ,$name))
+                 (do
+                    (content-type "text/html")
+                    (html/encode ,;*args*))
+
                 response)))))
-
 
 
 (defn server [&opt port host]
