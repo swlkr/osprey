@@ -3,17 +3,14 @@
 (enable :sessions {:secure false})
 (enable :csrf-tokens)
 
-# after any request that isn't a redirect, slap a layout and html encode
-(after "*"
-       (if (dictionary? response)
-         response
-         (ok text/html
-             (html/encode
-               (doctype :html5)
-               [:html {:lang "en"}
-                [:head
-                 [:title (request :uri)]]
-                [:body response]]))))
+
+# wrap all html responses with layout
+(layout
+  (doctype :html5)
+  [:html {:lang "en"}
+   [:head
+    [:title (request :uri)]]
+   [:body response]])
 
 
 (GET "/"

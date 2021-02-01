@@ -2,33 +2,26 @@
 
 # put the todos somewhere
 # since there isn't a database
-(def todos @{0 {:id 0 :name "Osprey" :done true}})
+(def todos @{0 {:id 0 :name "Osprey" :done "true"}})
 
 
-# coerce false/true and numbers
-# since there is no database :(
 (defn coerce [body]
-  (when (dictionary? body)
-    (var output @{})
+  (var output @{})
 
-    (eachp [k v] body
-      (put output k
-           (cond
-             (= "false" v) false
-             (= "true" v) true
-             (peg/match :d+ v) (scan-number v)
-             :else v)))
+  (eachp [k v] body
+    (put output k
+         (cond
+           (= "false" v) false
+           (= "true" v) true
+           (peg/match :d+ v) (scan-number v)
+           :else v)))
 
-    output))
+  output)
 
 
-# before all requests try to parse application/x-www-form-urlencoded body
-# and use naive coerce fn
+# before all requests use naive coerce fn on params
 (before "*"
-        (-> request
-            (update :body form/decode)
-            (update :body coerce)
-            (update :params coerce)))
+        (update request :params coerce))
 
 
 # before "/todos/:id"
@@ -36,20 +29,18 @@
 (before "/todos/*"
         (when (params :id)
           (set! id (params :id)))
+
         (set! todo (todos id)))
 
 
 # after any request that isn't a redirect, slap a layout and html encode
-(after "*"
-       (if (dictionary? response)
-         response
-         (ok text/html
-             (html/encode
-               (doctype :html5)
-               [:html {:lang "en"}
-                [:head
-                 [:title (request :uri)]]
-                [:body response]]))))
+(layout
+  (doctype :html5)
+
+  [:html {:lang "en"}
+   [:head
+    [:title (request :path)]]
+   [:body response]])
 
 
 # checkbox helper
@@ -99,7 +90,7 @@
             (when-let [err (get-in request [:errors :name])]
               [:div err])]
 
-           (checkbox {:name "done" :checked (get todo :done false)})
+           (checkbox {:name "done" :checked (todo :done)})
            [:label "Done"]
 
            [:input {:type "submit" :value "Save"}]))
@@ -107,9 +98,9 @@
 
 (POST "/todos"
       (let [id (-> todos keys length)
-            todo (put body :id id)]
+            todo (put params :id id)]
 
-        (if (empty? (body :name))
+        (if (empty? (params :name))
           (render "/todo" (merge request {:errors {:name "name is blank"}}))
 
           (do
@@ -132,7 +123,7 @@
 
 # this updates todos in the dictionary
 (POST "/todos/:id/update"
-      (update todos id merge body)
+      (update todos id merge params)
       (redirect "/todos"))
 
 

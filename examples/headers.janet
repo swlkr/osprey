@@ -2,7 +2,7 @@
 
 (enable :static-files)
 
-(after "*"
-       (put-in response [:headers "X-Powered-By"] "osprey"))
+(before "*"
+        (header "X-Powered-By" "osprey"))
 
 (server 9001)
