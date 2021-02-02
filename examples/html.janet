@@ -1,5 +1,9 @@
 (import ../src/osprey :prefix "")
 
+
+(enable :sessions {:secure false})
+
+
 # put the todos somewhere
 # since there isn't a database
 (def todos @{0 {:id 0 :name "Osprey" :done "true"}})
