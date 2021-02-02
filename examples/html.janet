@@ -10,17 +10,20 @@
 
 
 (defn coerce [body]
-  (var output @{})
+  (if (dictionary? body)
+    (do
+      (var output @{})
 
-  (eachp [k v] body
-    (put output k
-         (cond
-           (= "false" v) false
-           (= "true" v) true
-           (peg/match :d+ v) (scan-number v)
-           :else v)))
+      (eachp [k v] body
+        (put output k
+             (cond
+               (= "false" v) false
+               (= "true" v) true
+               (peg/match :d+ v) (scan-number v)
+               :else v)))
 
-  output)
+      output)
+    body))
 
 
 # before all requests use naive coerce fn on params
