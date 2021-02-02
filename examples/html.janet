@@ -47,7 +47,13 @@
   [:html {:lang "en"}
    [:head
     [:title (request :path)]]
-   [:body response]])
+   [:body
+    [:a {:href "/"} "go home"]
+    [:span " "]
+    [:a {:href "/todos"} "view todos"]
+    [:span " "]
+    [:a {:href "/todo"} "new todo"]
+    response]])
 
 
 # checkbox helper
@@ -60,16 +66,16 @@
 
 
 (GET "/"
-     [[:h1 "welcome to osprey"]
-      [:a {:href "/todos"} "view todos"]])
+     [:h1 "welcome to osprey"])
 
 
 # list of todos
 (GET "/todos"
      [:div
-      [:a {:href "/"} "go home"]
-      [:span " "]
-      [:a {:href "/todo"} "new todo"]
+
+      (when-let [message (get flash :notice)]
+        [:p message])
+
       [:ul
        (foreach [todo (->> todos values (sort-by |($ :id)))]
                 [:li
@@ -97,7 +103,7 @@
             (when-let [err (get-in request [:errors :name])]
               [:div err])]
 
-           (checkbox {:name "done" :checked (todo :done)})
+           (checkbox {:name "done" :checked (get todo :done)})
            [:label "Done"]
 
            [:input {:type "submit" :value "Save"}]))
@@ -136,7 +142,10 @@
 
 # this deletes todos from the dictionary
 (POST "/todos/:id/delete"
+      (put flash :notice "Todo deleted successfully")
+
       (put todos id nil)
+
       (redirect "/todos"))
 
 
