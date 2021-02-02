@@ -235,7 +235,8 @@
         (with-dyns [:response @{:status 200
                                 :headers @{"Content-Type" "text/plain"}}
                     :redirect @{}
-                    :layout nil]
+                    :layout nil
+                    :flashed? nil]
 
           # run all before-fns before request
           (run-before-fns request)
@@ -504,14 +505,19 @@
 
   (before "*"
           (let [o-session (session/decrypt *session-secret* request)]
-            (set! session (get o-session :user))))
+            (set! session (get o-session :user))
+            # flash messages
+            (set! flash (get o-session :flash @{}))
+            (setdyn :flashed? (not (empty? flash)))))
 
   (after-last "*"
               (let [response (if (dictionary? response)
                                response
-                               (ok text/plain (string response)))]
+                               (put (dyn :response) :body (string response)))]
                 (as-> (session/encrypt *session-secret*
                                        {:user session
+                                        :flash (if (dyn :flashed?) @{} flash)
+                                        :flashed? (not (dyn :flashed?))
                                         :csrf-token (eval 'csrf-token)}) ?
                       (session/cookie ? options)
                       (add-header response "Set-Cookie" ?)))))
