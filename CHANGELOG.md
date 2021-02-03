@@ -18,3 +18,4 @@ All notable changes to this project will be documented in this file.
 - Change `html/encode` to handle strings without tags
 - Use `janet-html` to share html rendering with joy
 - Automatically parse form encoded bodies and put the results in `params`
+- Added flash message support when `(enable :sessions)` is called
