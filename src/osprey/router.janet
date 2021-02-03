@@ -336,7 +336,21 @@
   (app (merge (or req request) {:uri url :method "GET"})))
 
 
-(defn view [request uri]
+(defn view
+  `
+  Outputs the return value for a given route without re-running before macros
+
+  Example:
+
+  (use osprey)
+
+  (before "*" (print "before"))
+
+  (GET "/im" "i'm")
+
+  (GET "/home" (string (view "/im") " home")) # outputs "i'm home" and doesn't print "before"
+  `
+  [request uri]
   (let [route (-> (filter (fn [[method uri*]] (and (= method :get) (= uri uri*))) *routes*)
                   (first))
         f (last route)]
@@ -359,7 +373,29 @@
   mut-string-route)
 
 
-(defn form [csrf-token attrs & body]
+(defn form
+  `
+  Form helper that outputs a form with a hidden input with the csrf-token defined
+  and sets the method to POST
+
+  Note: this only works inside of GET macros
+
+  Example:
+
+  (enable :sessions)
+  (enable :csrf-tokens)
+
+  (GET "/"
+    (form {:action "/"}
+      [:input {:type "text"}]))
+
+  # =>
+
+  [:form {:action "/" :method "post"}
+    [:input {:type "hidden" :name "__csrf-token" :value "<csrf-token-value>"}]
+    [:input {:type "text"}]]
+  `
+  [csrf-token attrs & body]
   [:form (merge {:method "post"} attrs)
    (when csrf-token
      [:input {:type "hidden" :name "__csrf-token" :value csrf-token}])
@@ -367,6 +403,12 @@
 
 
 (defmacro GET
+  `Creates a GET route
+
+  Example:
+
+  (GET "/" "home")
+  `
   [uri & *osprey-args*]
   (with-syms [$uri]
     ~(let [,$uri ,uri]
@@ -383,6 +425,11 @@
 
 
 (defmacro POST
+  `Creates a POST route
+
+  Example:
+
+  (POST "/" (redirect "/elsewhere"))`
   [uri & *osprey-args*]
   (with-syms [$uri]
     ~(let [,$uri ,uri]
@@ -444,7 +491,18 @@
   (array/push *before-fns* [uri args]))
 
 
-(defmacro before [uri & *osprey-args*]
+(defmacro before
+  `Runs a bit of code before all routes defined by uri
+
+  Examples:
+
+  (before "*"
+          (print "this code will run before all routes"))
+
+  (before "/todos/*"
+          (print "this code will run before all routes starting with /todos/"))
+  `
+  [uri & *osprey-args*]
   (with-syms [$uri]
     ~(let [,$uri ,uri]
        (,add-before ,$uri
@@ -465,8 +523,13 @@
 (defn- add-osprey-after [uri args]
   (array/push *osprey-after-fns* [uri args]))
 
+s
+(defmacro after
+  `Deprecated.
 
-(defmacro after [uri & *osprey-args*]
+  Try not to use this, it has weird side effects when combined
+  with things like (enable), (not-found), and (layout)`
+  [uri & *osprey-args*]
   (with-syms [$uri]
     ~(let [,$uri ,uri]
        (,add-after ,$uri
@@ -494,20 +557,43 @@
   (set *not-found-fn* args))
 
 
-(defmacro not-found [& *osprey-body*]
-   ~(,set-not-found (fn [request]
-                      (let [{:headers headers
-                             :params params
-                             :method method
-                             :body body} request]
-                        (do ,;*osprey-body*)))))
+(defmacro not-found
+  `
+  Runs a bit of code when a route or static file can't be found
+
+  Example:
+
+  (not-found
+    (status :404)
+    (content-type "text/html")
+
+    [:h1 "not found"])
+  `
+  [& *osprey-body*]
+  ~(,set-not-found (fn [request]
+                     (let [{:headers headers
+                            :params params
+                            :method method
+                            :body body} request]
+                       (do ,;*osprey-body*)))))
 
 
-(defn use-layout [name]
+(defn use-layout
+  `Sets which layout to use if using named layouts`
+  [name]
   (setdyn :layout name))
 
 
-(defmacro layout [& *osprey-args*]
+(defmacro layout
+  `
+  Creates a layout which will wrap all janet-html responses.
+
+  Also sets the content-type to "text/html"
+
+  Create multiple layouts by passing a keyword as the first argument
+  and calling use-layout.
+  `
+  [& *osprey-args*]
   (var name :default)
   (var *args* *osprey-args*)
 
@@ -531,7 +617,9 @@
                 response)))))
 
 
-(defn server [&opt port host]
+(defn server
+  `Start an http server listening on port 0 and localhost by default`
+  [&opt port host]
   (default port 0)
   (default host "localhost")
 
@@ -540,8 +628,17 @@
 
 # alias route-url to href
 # for anchor tags
-(def href route-url)
-(def action route-url)
+(def href :public
+  `Helper for working with route urls.
+
+  Example:
+
+  (href "/todos/:id" {:id 1}) # => "/todos/1"`
+  route-url)
+
+(def action :public
+  `Helper for working with form actions. Same as href.`
+  route-url)
 
 
 (defn redirect
