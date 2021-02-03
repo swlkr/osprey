@@ -128,11 +128,21 @@
   res)
 
 
-(defn halt [response]
+(defn halt
+  `
+  halts all processing and returns immediately with the given response dictionary
+
+  Example:
+
+  (halt {:status 500
+         :body "internal server error"
+         :headers {"Content-Type" "text/plain"}})
+  `
+  [response]
   (return :halt response))
 
 
-(defn parse-body [request]
+(defn- parse-body [request]
   (cond
     (multipart/multipart? request)
     (multipart/params request)
@@ -161,6 +171,11 @@
   If the value is an array it uses array/push to add to the value
 
   Returns the response dictionary
+
+  Example:
+
+  (before "*"
+    (header "Content-Type" "application/json"))
   `
   [key value]
   (let [response (dyn :response)
@@ -170,11 +185,25 @@
       (put-in response [:headers key] value))))
 
 
-(defn content-type [ct]
+(defn content-type
+  `Sets the content-type of the current response
+
+  Example:
+
+  (before "*"
+    (content-type "text/html"))`
+  [ct]
   (header "Content-Type" ct))
 
 
-(defn status [s]
+(defn status
+  `Sets the status of the current response
+
+  Example:
+
+  (before "*"
+    (content-type "text/html"))`
+  [s]
   (put (dyn :response) :status s))
 
 
@@ -255,10 +284,55 @@
                 (run-after-fns ? request *osprey-after-fns*)))))))
 
 
-(def app (handler *routes*))
+(def app :public `
+  Stops just short of sending http requests and responses over the server.
+  Mostly useful for testing.
+
+  Example:
+
+  (import osprey :prefix "")
+
+  (GET "/example" "example")
+
+  (app {:uri "/example" :method "GET"})
+
+  # =>
+
+  @{:status 200 :body "example" :headers @{"Content-Type" "text/plain"}}
+`
+  (handler *routes*))
 
 
-(defn render [request url &opt req]
+(defn render
+  `
+  Re-renders a given GET route with a new request that you define.
+
+  Good for re-rendering forms on errors.
+
+  Example:
+
+  (use osprey)
+
+  (before "*"
+          (content-type "text/html"))
+
+  (GET "/" [:h1 "home"])
+
+  (GET "/form"
+       [:main
+        (when (request :errors)
+          [:div (request :errors)])
+
+        (form {:action "/form"}
+          [:input {:type "text" :name "name"}]
+          [:input {:type "submit" :value "submit"}])])
+
+  (POST "/form"
+        (if (empty? (get params :name ""))
+          (render "/form" (merge request {:errors "name is blank"}))
+          (redirect "/")))
+  `
+  [request url &opt req]
   (app (merge (or req request) {:uri url :method "GET"})))
 
 
@@ -561,7 +635,82 @@
          response))
 
 
-(defn enable [key &opt val]
+(defn enable
+  `Enable different middleware.
+
+  Options are:
+
+  - :static-files
+  - :sessions
+  - :csrf-tokens
+  - :logging
+
+  ## :static-files
+
+  Serve static files from "public" directory.
+  Pass in a string to change which directory they are served from.
+
+  (enable :static-files)
+
+  or
+
+  (enable :static-files "static")
+
+  ## :sessions
+
+  Adds an encrypted session cookie to all responses, pass a dictionary to configure.
+
+  Dictionary keys/values correspond to cookie keys/values, except for secret.
+
+  The :secret key is for encrypting the session cookies and persisting that data between
+  server restarts. If you don't pass it, when you restart the server, all existing
+  session cookies will be invalid since there will be a new secret key.
+
+  Default cookie headers look like this:
+
+  Set-Cookie: session=<encrypted session data> SameSite=Lax; HttpOnly; Path=/
+
+  All cookie options:
+
+  :samesite <"Lax" or "Strict" or "None">
+  :httponly <true or false>
+  :path <any string>
+  :secret <true or false>
+  :domain <any string>
+  :expires <any string>
+  :max-age <any string>
+
+  Example:
+
+  (enable :sessions)
+
+  or
+
+  (enable :sessions {:secret (os/getenv "SECRET_KEY") :secure false :samesite "Strict"})
+
+  ## :csrf-tokens
+
+  Enables csrf tokens on forms. Requires a call to (enable :sessions) as well.
+
+  Example:
+
+  (enable :csrf-tokens {:skip ["/stripe-web-hooks"]})
+
+  Pass a dictionary with :skip key to skip a set of routes, like:
+
+  (enable :csrf-tokens)
+
+  ## :logging
+
+  Enables logging. Can pass a function as the argument to configure logging.
+
+  See the amazing example put together by @pepe: https://github.com/swlkr/osprey/examples/logging.janet
+
+  Example:
+
+  (enable :logging)
+  `
+  [key &opt val]
   (case key
     :static-files
     (enable-static-files val)
