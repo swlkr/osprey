@@ -523,7 +523,7 @@
 (defn- add-osprey-after [uri args]
   (array/push *osprey-after-fns* [uri args]))
 
-s
+
 (defmacro after
   `Deprecated.
 
