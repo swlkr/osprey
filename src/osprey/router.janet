@@ -299,7 +299,7 @@
   # =>
 
   @{:status 200 :body "example" :headers @{"Content-Type" "text/plain"}}
-`
+  `
   (handler *routes*))
 
 
