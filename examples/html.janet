@@ -31,15 +31,6 @@
         (update request :params coerce))
 
 
-# before "/todos/:id"
-# set the id and todo var
-(before "/todos/*"
-        (when (params :id)
-          (set! id (params :id)))
-
-        (set! todo (todos id)))
-
-
 # after any request that isn't a redirect, slap a layout and html encode
 (layout
   (doctype :html5)
@@ -73,7 +64,7 @@
 (GET "/todos"
      [:div
 
-      (when-let [message (get flash :notice)]
+      (when-let [message (flash :notice)]
         [:p message])
 
       [:ul
@@ -89,6 +80,8 @@
 
 
 (GET "/todos/:id"
+     (def- todo (todos (params :id)))
+
      [:div
       [:span (todo :name)]
       [:span (if (todo :done) " is done!" "")]])
@@ -103,13 +96,15 @@
             (when-let [err (get-in request [:errors :name])]
               [:div err])]
 
-           (checkbox {:name "done" :checked (get todo :done)})
+           (checkbox {:name "done" :checked false})
            [:label "Done"]
 
            [:input {:type "submit" :value "Save"}]))
 
 
 (POST "/todos"
+      (flash :notice "Todo created successfully!")
+
       (let [id (-> todos keys length)
             todo (put params :id id)]
 
@@ -122,6 +117,8 @@
 
 
 (GET "/todos/:id/edit"
+     (def- todo (todos (params :id)))
+
      (form {:action (href "/todos/:id/update" todo)}
            [:div
             [:label "Name"]
@@ -136,15 +133,16 @@
 
 # this updates todos in the dictionary
 (POST "/todos/:id/update"
-      (update todos id merge params)
+      (update todos (params :id) merge params)
+
       (redirect "/todos"))
 
 
 # this deletes todos from the dictionary
 (POST "/todos/:id/delete"
-      (put flash :notice "Todo deleted successfully")
+      (flash :notice "Todo deleted successfully")
 
-      (put todos id nil)
+      (put todos (params :id) nil)
 
       (redirect "/todos"))
 

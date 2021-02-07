@@ -29,8 +29,9 @@
     response]])
 
 
-(before "/a*"
-        (use-layout :a))
+(before
+  (when (string/has-prefix? "/a" (request :path))
+    (use-layout :a)))
 
 
 (GET "/"

@@ -8,17 +8,15 @@
 
 
 # before everything try to parse json body
-(before "*"
-        (content-type "application/json")
+(before
+  (content-type "application/json")
 
-        (when (and body (not (empty? body)))
-          (update request :body json/decode)))
+  (when (and body (not (empty? body)))
+    (update request :body json/decode))
 
-
-# before "/todos/:id"
-# set the id so you don't have to scan-number the (params :id) twice
-(before "/todos/*"
-        (set! id (scan-number (or (params :id) ""))))
+  # before urls with :id
+  (when (params :id)
+    (update-in request [:params :id] scan-number)))
 
 
 # just a nice status message on root
@@ -53,7 +51,7 @@
 # try this
 # $ curl -v -X PATCH -H "Content-Type: application/json" --data '{"todo": "buy whole grain bread"}' localhost:9001/todos/0
 (PATCH "/todos/:id"
-       (json/encode (update todos id merge body)))
+       (json/encode (update todos (params :id) merge body)))
 
 
 # this deletes todos from the array
@@ -63,7 +61,7 @@
 # try this
 # $ curl -v -X DELETE localhost:9001/todos/0
 (DELETE "/todos/:id"
-        (json/encode (array/remove todos id)))
+        (json/encode (array/remove todos (params :id))))
 
 
 # start the server on port 9001

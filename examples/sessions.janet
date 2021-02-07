@@ -15,7 +15,7 @@
 
 (GET "/"
      [:main
-      (if session
+      (if (session :session?)
         [:p "yes, there is a session!"]
         [:p "no, there is not a session"])
 
@@ -27,13 +27,13 @@
 
 
 (POST "/sessions"
-      (set session "session")
+      (session :session? true)
 
       (redirect "/"))
 
 
 (POST "/sessions/delete"
-      (set session nil)
+      (session :session? nil)
 
       (redirect "/"))
 
