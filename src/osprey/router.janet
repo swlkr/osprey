@@ -207,6 +207,19 @@
   (put (dyn :response) :status s))
 
 
+(defn flash [k &opt v]
+  (if v
+    (put (dyn :flash) k v)
+    (get (dyn :flash) k)))
+
+
+(defn session [& args]
+  (case (length args)
+    1 (get (dyn :session) (first args))
+    2 (put (dyn :session) (first args) (last args))
+    (dyn :session)))
+
+
 (defn- response-table
   `Coerce any value into a response dictionary`
   [response]
@@ -264,8 +277,10 @@
         (with-dyns [:response @{:status 200
                                 :headers @{"Content-Type" "text/plain"}}
                     :redirect @{}
-                    :layout nil
-                    :flashed? nil]
+                    :layout :default
+                    :flashed? nil
+                    :flash @{}
+                    :csrf-token nil]
 
           # run all before-fns before request
           (run-before-fns request)
@@ -697,20 +712,19 @@
 
   (before "*"
           (let [o-session (session/decrypt *session-secret* request)]
-            (set! session (get o-session :user))
-            # flash messages
-            (set! flash (get o-session :flash @{}))
-            (setdyn :flashed? (not (empty? flash)))))
+            (setdyn :session (get o-session :user @{}))
+            (setdyn :flash (get o-session :flash @{}))
+            (setdyn :flashed? (not (empty? (dyn :flash))))))
 
   (after-last "*"
               (let [response (if (dictionary? response)
-                               response
+                               (merge (dyn :response) response)
                                (put (dyn :response) :body (string response)))]
                 (as-> (session/encrypt *session-secret*
-                                       {:user session
-                                        :flash (if (dyn :flashed?) @{} flash)
+                                       {:user (dyn :session)
+                                        :flash (if (dyn :flashed?) @{} (dyn :flash))
                                         :flashed? (not (dyn :flashed?))
-                                        :csrf-token (eval 'csrf-token)}) ?
+                                        :csrf-token (dyn :csrf-token)}) ?
                       (session/cookie ? options)
                       (add-header response "Set-Cookie" ?)))))
 
@@ -728,10 +742,11 @@
                 (halt @{:status 403 :body "Invalid CSRF Token" :headers @{"Content-Type" "text/plain"}})))
 
             # set a new token
-            (set! csrf-token (get session :csrf-token (csrf/token)))
+            (setdyn :csrf-token (get session :csrf-token (csrf/token)))
 
             # mask the token for forms
-            (put request :csrf-token (csrf/mask csrf-token)))))
+            (put request :csrf-token (csrf/mask (dyn :csrf-token))))))
+
 
 (defn- enable-logging [&opt options]
   (def formats
@@ -747,10 +762,11 @@
           (printf "HTTP/%s %s %i %s elapsed %.3fms" version method status fulluri elapsed))))
 
   (before "*"
-          (set! _start-clock (os/clock)))
+    (put request :_start-clock (os/clock)))
+
   (after "*"
-         (formats _start-clock request response)
-         response))
+    (formats (request :_start-clock) request response)
+    response))
 
 
 (defn enable
