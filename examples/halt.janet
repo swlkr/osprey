@@ -1,11 +1,13 @@
 (use ../src/osprey)
 
+(defn protected? [request]
+  (or (= (request :path) "/")
+      (= (request :path) "/protected")))
 
 # halt with a 401
-(before "*"
-        (unless (or (= (request :path) "/")
-                    (= (request :path) "/protected"))
-          (halt {:status 401 :body "Nope." :headers {"Content-Type" "text/plain"}})))
+(before
+  (unless (protected? request)
+    (halt {:status 401 :body "Nope." :headers {"Content-Type" "text/plain"}})))
 
 
 # wrap all html responses with layout
@@ -14,10 +16,10 @@
 
   [:html {:lang "en"}
 
-    [:head
-     [:title (request :path)]]
+   [:head
+    [:title (request :path)]]
 
-    [:body response]])
+   [:body response]])
 
 
 # returns 200

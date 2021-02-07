@@ -27,8 +27,8 @@
 
 
 # before all requests use naive coerce fn on params
-(before "*"
-        (update request :params coerce))
+(before
+  (update request :params coerce))
 
 
 # after any request that isn't a redirect, slap a layout and html encode
