@@ -1,6 +1,13 @@
 (defmacro set!
-  `set! creates a varglobal in the current env
-  and also sets that value when a before or after
+  `
+  Deprecated. You probably don't want this.
+
+  WARNING: this is a *global variable* that persists
+  between requests. Be sure you know what you are doing if
+  you use this.
+
+  set! creates a varglobal and also sets
+  that value when a before or after
   function is executed. Returns nil.
 
   Example:
