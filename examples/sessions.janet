@@ -1,6 +1,7 @@
 (import ../src/osprey :prefix "")
 
 
+# enable session cookies
 (enable :sessions {:secure false})
 
 
@@ -19,20 +20,22 @@
         [:p "yes, there is a session!"]
         [:p "no, there is not a session"])
 
-      (form {:action "/sessions"}
+      # the form helper is only available in route macros
+      # it also automatically assigns method to POST
+      (form {:action "/create-session"}
             [:input {:type "submit" :value "Sign in"}])
 
-      (form {:action "/sessions/delete"}
+      (form {:action "/delete-session"}
             [:input {:type "submit" :value "Sign out"}])])
 
 
-(POST "/sessions"
+(POST "/create-session"
       (session :session? true)
 
       (redirect "/"))
 
 
-(POST "/sessions/delete"
+(POST "/delete-session"
       (session :session? nil)
 
       (redirect "/"))
