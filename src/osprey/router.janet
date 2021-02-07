@@ -502,7 +502,14 @@
   (before "/todos/*"
           (print "this code will run before all routes starting with /todos/"))
   `
-  [uri & *osprey-args*]
+  [& *osprey-args*]
+  (var uri "*")
+  (var *osprey-args* *osprey-args*)
+
+  (when (keyword? (first *osprey-args*))
+    (set uri (first *osprey-args*))
+    (set *osprey-args* (drop 1 *osprey-args*)))
+
   (with-syms [$uri]
     ~(let [,$uri ,uri]
        (,add-before ,$uri
@@ -529,7 +536,14 @@
 
   Try not to use this, it has weird side effects when combined
   with things like (enable), (not-found), and (layout)`
-  [uri & *osprey-args*]
+  [& *osprey-args*]
+  (var uri "*")
+  (var *osprey-args* *osprey-args*)
+
+  (when (keyword? (first *osprey-args*))
+    (set uri (first *osprey-args*))
+    (set *osprey-args* (drop 1 *osprey-args*)))
+
   (with-syms [$uri]
     ~(let [,$uri ,uri]
        (,add-after ,$uri
@@ -542,7 +556,14 @@
               (do ,;*osprey-args*)))))))
 
 
-(defmacro- after-last [uri & *osprey-args*]
+(defmacro- after-last [& *osprey-args*]
+  (var uri "*")
+  (var *osprey-args* *osprey-args*)
+
+  (when (keyword? (first *osprey-args*))
+    (set uri (first *osprey-args*))
+    (set *osprey-args* (drop 1 *osprey-args*)))
+
   (with-syms [$uri]
     ~(let [,$uri ,uri]
        (,add-osprey-after ,$uri
