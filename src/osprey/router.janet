@@ -433,9 +433,9 @@
             (let [{:params params
                    :body body
                    :headers headers} request
-                  render (partial render request)
-                  form (partial form (get request :csrf-token))
-                  view (partial view request)]
+                  render (partial ,render request)
+                  form (partial ,form (get request :csrf-token))
+                  view (partial ,view request)]
               (do ,;*osprey-args*)))))))
 
 
@@ -454,9 +454,9 @@
             (let [{:params params
                    :body body
                    :headers headers} request
-                  render (partial render request)
-                  form (partial form (get request :csrf-token))
-                  view (partial view request)]
+                  render (partial ,render request)
+                  form (partial ,form (get request :csrf-token))
+                  view (partial ,view request)]
               (do ,;*osprey-args*)))))))
 
 
@@ -470,7 +470,7 @@
             (let [{:params params
                    :body body
                    :headers headers} request
-                  render (partial render request)]
+                  render (partial ,render request)]
               (do ,;*osprey-args*)))))))
 
 
@@ -484,7 +484,7 @@
             (let [{:params params
                    :body body
                    :headers headers} request
-                  render (partial render request)]
+                  render (partial ,render request)]
               (do ,;*osprey-args*)))))))
 
 
@@ -498,7 +498,7 @@
             (let [{:params params
                    :body body
                    :headers headers} request
-                  render (partial render request)]
+                  render (partial ,render request)]
               (do ,;*osprey-args*)))))))
 
 
@@ -533,7 +533,7 @@
                    :body body
                    :params params
                    :method method} request
-                  form (partial form (get request :csrf-token))
+                  form (partial ,form (get request :csrf-token))
                   response (dyn :response)]
               (do ,;*osprey-args*)))))))
 
@@ -567,7 +567,7 @@
                    :body body
                    :params params
                    :method method} request
-                  form (partial form (get request :csrf-token))]
+                  form (partial ,form (get request :csrf-token))]
               (do ,;*osprey-args*)))))))
 
 
@@ -642,15 +642,14 @@
 
   (with-syms [$name]
     ~(let [,$name ,name]
-
-      (after "*"
-             (if (and (tuple? response)
-                      (= (dyn :layout) ,$name))
-                 (do
-                    (content-type "text/html")
-                    (html/encode ,;*args*))
-
-                response)))))
+       (,add-after "*"
+          (fn [response &opt request]
+            (if (and (tuple? response)
+                     (= (dyn :layout) ,$name))
+                (do
+                   (,content-type "text/html")
+                   (,html/encode ,;*args*))
+               response))))))
 
 
 (defn server
@@ -696,56 +695,62 @@
 
 
 (defn- enable-static-files [public-folder]
-  (after "*"
-         (if response
-           response
-           (let [public-folder (or public-folder "public")
-                 path (request :path)
-                 file-path (if (string/has-suffix? "/" path)
-                             (string path "index.html")
-                             path)]
-             (put (dyn :response) :file (path/join public-folder file-path))))))
+  (add-after "*"
+             (fn [response &opt request]
+               (if response
+                 response
+                 (let [public-folder (or public-folder "public")
+                       path (request :path)
+                       file-path (if (string/has-suffix? "/" path)
+                                   (string path "index.html")
+                                   path)]
+                   (put (dyn :response) :file (path/join public-folder file-path)))))))
 
 
 (defn- enable-sessions [options]
   (set *session-secret* (get options :secret (cipher/encryption-key)))
 
-  (before "*"
-          (let [o-session (session/decrypt *session-secret* request)]
-            (setdyn :session (get o-session :user @{}))
-            (setdyn :flash (get o-session :flash @{}))
-            (setdyn :flashed? (not (empty? (dyn :flash))))))
+  (add-before "*"
+              (fn [request]
+                (let [o-session (session/decrypt *session-secret* request)]
+                  (setdyn :session (get o-session :user @{}))
+                  (setdyn :flash (get o-session :flash @{}))
+                  (setdyn :flashed? (not (empty? (dyn :flash)))))))
 
-  (after-last "*"
-              (let [response (if (dictionary? response)
-                               (merge (dyn :response) response)
-                               (put (dyn :response) :body (string response)))]
-                (as-> (session/encrypt *session-secret*
-                                       {:user (dyn :session)
-                                        :flash (if (dyn :flashed?) @{} (dyn :flash))
-                                        :flashed? (not (dyn :flashed?))
-                                        :csrf-token (dyn :csrf-token)}) ?
-                      (session/cookie ? options)
-                      (add-header response "Set-Cookie" ?)))))
+  (add-osprey-after "*"
+                    (fn [response request]
+                      (let [response (if (dictionary? response)
+                                       (merge (dyn :response) response)
+                                       (put (dyn :response) :body (string response)))]
+                        (as-> (session/encrypt *session-secret*
+                                               {:user (dyn :session)
+                                                :flash (if (dyn :flashed?) @{} (dyn :flash))
+                                                :flashed? (not (dyn :flashed?))
+                                                :csrf-token (dyn :csrf-token)}) ?
+                              (session/cookie ? options)
+                              (add-header response "Set-Cookie" ?))))))
 
 
 (defn- enable-csrf-tokens [&opt options]
   (default options {:skip []})
+  (def h halt)
 
-  (before "*"
-          (when (find (partial = (request :route-uri)) (options :skip))
-            (break))
+  (add-before "*"
+              (fn [request]
+                (when (find (partial = (request :route-uri)) (options :skip))
+                  (break))
 
-          (let [session (session/decrypt *session-secret* request)]
-            (when (= "post" (string/ascii-lower method))
-              (unless (csrf/tokens-equal? (csrf/request-token headers params) (csrf/session-token session))
-                (halt @{:status 403 :body "Invalid CSRF Token" :headers @{"Content-Type" "text/plain"}})))
+                (let [{:headers headers :params params :method method} request
+                      session (session/decrypt *session-secret* request)]
+                  (when (= "post" (string/ascii-lower method))
+                    (unless (csrf/tokens-equal? (csrf/request-token headers params) (csrf/session-token session))
+                      (h @{:status 403 :body "Invalid CSRF Token" :headers @{"Content-Type" "text/plain"}})))
 
-            # set a new token
-            (setdyn :csrf-token (get session :csrf-token (csrf/token)))
+                  # set a new token
+                  (setdyn :csrf-token (get session :csrf-token (csrf/token)))
 
-            # mask the token for forms
-            (put request :csrf-token (csrf/mask (dyn :csrf-token))))))
+                  # mask the token for forms
+                  (put request :csrf-token (csrf/mask (dyn :csrf-token)))))))
 
 
 (defn- enable-logging [&opt options]
@@ -761,12 +766,14 @@
           (def status (or (get response :status) 200))
           (printf "HTTP/%s %s %i %s elapsed %.3fms" version method status fulluri elapsed))))
 
-  (before "*"
-    (put request :_start-clock (os/clock)))
+  (add-before "*"
+              (fn [request]
+                (put request :_start-clock (os/clock))))
 
-  (after "*"
-    (formats (request :_start-clock) request response)
-    response))
+  (add-after "*"
+             (fn [response &opt request]
+               (formats (request :_start-clock) request response)
+               response)))
 
 
 (defn enable
